@@ -1,10 +1,6 @@
 package com.example.pokerv2.model;
 
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,14 +17,20 @@ public class Player {
     private Long id;
 
     @ManyToOne
+    @JoinColumn(name = "user_id")
     private User user;
+
     @ManyToOne
+    @JoinColumn(name = "board_id")
     private Board board;
+
+    private int position;
 
     private double bb;
     private int card1;
     private int card2;
     private int status;
     private int totalCallSize;
+
 
 }

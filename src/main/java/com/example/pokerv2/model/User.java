@@ -23,7 +23,7 @@ public class User {
     private int money;
     @OneToOne
     private Hud hud;
-    @OneToMany
+    @OneToMany(mappedBy = "user")
     private List<Player> playerList;
 
 
