@@ -14,6 +14,31 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+/**
+ * 2024/01/02 jungeun
+ *
+ * 1. totalPlayer
+ * 총 플레이어의 수를 나타낸다.
+ *
+ * 2. btn
+ *
+ *
+ * 3. blind
+ *
+ * 4. pot
+ *
+ * 5. bettingPos
+ *
+ * 6. actionPos
+ *
+ * 7. phaseNum
+ *
+ * 8. bettingSize
+ *
+ * 9. communityCard1~5
+ * 공유하는 카드들의 번호 저장
+ *
+ */
 public class Board {
 
     @Id @GeneratedValue

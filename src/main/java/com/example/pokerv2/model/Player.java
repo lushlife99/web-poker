@@ -6,6 +6,27 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 2024/01/02 jungeun
+ *
+ * 1. user
+ * 유저 정보 가져옴
+ *
+ * 2. bb
+ * ????????????
+ *
+ * 3. card1, 2
+ * 플레이어가 가지고 있는 카드 정보
+ *
+ * 4. status
+ * *************
+ * 여기 혹시 PlayStatus를 사용 안하고 int를 쓰나요?
+ *
+ * 5. totalCallSize
+ * ????????????
+ *
+ */
+
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor

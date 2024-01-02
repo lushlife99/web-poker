@@ -8,6 +8,14 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * 2024/01/02 jungeun
+ *
+ * 1. money
+ * 유저가 보유한 돈
+ *
+ *
+ */
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
