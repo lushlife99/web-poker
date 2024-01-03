@@ -1,9 +1,11 @@
 package com.example.pokerv2.service;
 
+import com.example.pokerv2.dto.UserDto;
 import com.example.pokerv2.error.CustomException;
 import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.model.User;
 import com.example.pokerv2.repository.UserRepository;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -29,5 +31,17 @@ public class UserServiceV1 {
 
     }
 
+    public UserDto login(String userId, String password, HttpServletResponse response) {
+        Optional<User> findUser = userRepository.findByUserId(userId);
+        if(findUser.isEmpty())
+            throw new CustomException(ErrorCode.NOT_EXISTS_USER);
+
+        User user = findUser.get();
+        if(!user.getPassword().equals(password))
+            throw new CustomException(ErrorCode.MISMATCH_PASSWORD);
+
+        sessionManager.createSession(user, response);
+        return new UserDto(user);
+    }
 
 }
