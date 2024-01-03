@@ -23,7 +23,7 @@ public class PlayerDto {
         this.id = player.getId();
         this.user = new UserDto(player.getUser());
         this.boardId = player.getBoard().getId();
-        this.position = player.getPosition();
+        this.position = player.getPosition().ordinal();
         this.bb = player.getBb();
         this.card1 = player.getCard1();
         this.card2 = player.getCard2();
