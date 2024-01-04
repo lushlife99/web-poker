@@ -8,12 +8,13 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum ErrorCode {
     /* 400 BAD_REQUEST : 잘못된 요청 */
-
+    NOT_ENOUGH_MONEY(HttpStatus.BAD_REQUEST, "자금이 충분하지 않습니다"),
+    BAD_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청입니다"),
 
     /* 401 UNAUTHORIZED : 인증되지 않은 사용자 */
     NOT_EXISTS_USER(HttpStatus.UNAUTHORIZED, "존재하지 않는 userId 입니다"),
     MISMATCH_PASSWORD(HttpStatus.UNAUTHORIZED, "비밀번호가 일치하지 않습니다"),
-
+    UNAUTHORIZED_USER(HttpStatus.UNAUTHORIZED, "인증되지 않은 사용자입니다"),
     /* 403 FORBIDDEN : 권한이 없는 사용자 */
 
 

@@ -1,5 +1,6 @@
 package com.example.pokerv2.model;
 
+import com.example.pokerv2.enums.PlayerStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,8 +30,8 @@ public class Player {
     private double bb;
     private int card1;
     private int card2;
-    private int status;
+    private PlayerStatus status;
     private int totalCallSize;
-
+    private int phaseCallSize;
 
 }

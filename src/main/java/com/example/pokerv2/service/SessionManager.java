@@ -36,6 +36,13 @@ public class SessionManager {
         return Optional.of(sessionStore.get(cookie.getValue()));
     }
 
+    public Optional<User> getSession(String sessionId){
+        if(sessionId == null){
+            return Optional.empty();
+        } else if(!sessionStore.containsKey(sessionId)) return Optional.empty();
+        return Optional.of(sessionStore.get(sessionId));
+    }
+
     public void expire(HttpServletRequest request){
         Cookie cookie = findCookie(request, SESSION_COOKIE_NAME);
         if(cookie != null){

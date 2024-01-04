@@ -37,7 +37,7 @@ public class BoardDto {
         this.pot = board.getPot();
         this.bettingPos = board.getBettingPos();
         this.actionPos = board.getActionPos();
-        this.phaseNum = board.getPhaseNum();
+        this.phaseNum = board.getPhaseStatus().ordinal();
         this.bettingSize = board.getBettingSize();
         this.communityCard1 = board.getCommunityCard1();
         this.communityCard2 = board.getCommunityCard2();
