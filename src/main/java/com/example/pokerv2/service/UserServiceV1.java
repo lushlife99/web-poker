@@ -3,6 +3,7 @@ package com.example.pokerv2.service;
 import com.example.pokerv2.dto.UserDto;
 import com.example.pokerv2.error.CustomException;
 import com.example.pokerv2.error.ErrorCode;
+import com.example.pokerv2.model.Hud;
 import com.example.pokerv2.model.User;
 import com.example.pokerv2.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,26 +19,26 @@ public class UserServiceV1 {
     private final UserRepository userRepository;
     private final SessionManager sessionManager;
 
-    public void join(String userId, String userName, String password){
-        Optional<User> findUser = userRepository.findByUserId(userId);
+    public void join(User user){
+        Optional<User> findUser = userRepository.findByUserId(user.getUserId());
         if(findUser.isPresent())
             throw new CustomException(ErrorCode.DUPLICATE_USER);
 
-        User joinUser = User.builder().userId(userId)
-                .userName(userName)
-                .password(password).money(10000000).build();
+        user.setMoney(10000000);
+        user.setHud(new Hud());
 
-        userRepository.save(joinUser);
+        userRepository.save(user);
 
     }
 
-    public UserDto login(String userId, String password, HttpServletResponse response) {
-        Optional<User> findUser = userRepository.findByUserId(userId);
+
+    public UserDto login(User loginUser, HttpServletResponse response) {
+        Optional<User> findUser = userRepository.findByUserId(loginUser.getUserId());
         if(findUser.isEmpty())
             throw new CustomException(ErrorCode.NOT_EXISTS_USER);
 
         User user = findUser.get();
-        if(!user.getPassword().equals(password))
+        if(!user.getPassword().equals(loginUser.getPassword()))
             throw new CustomException(ErrorCode.MISMATCH_PASSWORD);
 
         sessionManager.createSession(user, response);

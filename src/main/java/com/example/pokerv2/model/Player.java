@@ -1,6 +1,7 @@
 package com.example.pokerv2.model;
 
 import com.example.pokerv2.enums.PlayerStatus;
+import com.example.pokerv2.enums.Position;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,7 +26,7 @@ public class Player {
     @JoinColumn(name = "board_id")
     private Board board;
 
-    private int position;
+    private Position position;
 
     private double bb;
     private int card1;

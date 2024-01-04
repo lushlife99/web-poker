@@ -18,7 +18,7 @@ public class BoardDto {
     private int pot;
     private int bettingPos;
     private int actionPos;
-    private int phaseNum;
+    private int phaseStatus;
     private int bettingSize;
 
     private int communityCard1;
@@ -37,7 +37,7 @@ public class BoardDto {
         this.pot = board.getPot();
         this.bettingPos = board.getBettingPos();
         this.actionPos = board.getActionPos();
-        this.phaseNum = board.getPhaseStatus().ordinal();
+        this.phaseStatus = board.getPhaseStatus().ordinal();
         this.bettingSize = board.getBettingSize();
         this.communityCard1 = board.getCommunityCard1();
         this.communityCard2 = board.getCommunityCard2();

@@ -8,11 +8,8 @@ public class PlayerDto {
 
     private Long id;
     private UserDto user;
-
     private Long boardId;
-
     private int position;
-
     private double bb;
     private int card1;
     private int card2;
@@ -24,13 +21,14 @@ public class PlayerDto {
         this.id = player.getId();
         this.user = new UserDto(player.getUser());
         this.boardId = player.getBoard().getId();
-        this.position = player.getPosition();
+        this.position = player.getPosition().ordinal();
         this.bb = player.getBb();
         this.card1 = player.getCard1();
         this.card2 = player.getCard2();
         this.status = player.getStatus().ordinal();
         this.totalCallSize = player.getTotalCallSize();
         this.phaseCallSize = player.getPhaseCallSize();
+
     }
 
 }

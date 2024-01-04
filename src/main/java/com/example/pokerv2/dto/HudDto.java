@@ -12,7 +12,6 @@ public class HudDto {
 
 
     private Long id;
-
     private Long userId;
     private int totalHands;
     private int vpip;

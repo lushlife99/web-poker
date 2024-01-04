@@ -40,6 +40,7 @@ public class SessionManager {
         if(sessionId == null){
             return Optional.empty();
         } else if(!sessionStore.containsKey(sessionId)) return Optional.empty();
+
         return Optional.of(sessionStore.get(sessionId));
     }
 

@@ -3,6 +3,7 @@ package com.example.pokerv2.service;
 import com.example.pokerv2.dto.BoardDto;
 import com.example.pokerv2.enums.PhaseStatus;
 import com.example.pokerv2.enums.PlayerStatus;
+import com.example.pokerv2.enums.Position;
 import com.example.pokerv2.error.CustomException;
 import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.model.Board;
@@ -23,6 +24,7 @@ public class BoardServiceV1 {
     private static final int MAX_PLAYER = 6;
     private final BoardRepository boardRepository;
     private final SessionManager sessionManager;
+
 
 
     /**
@@ -50,6 +52,7 @@ public class BoardServiceV1 {
         Player player = buyIn(board, user, requestBb);
         List<Player> players = board.getPlayers();
         players.add(player);
+        seatIn(board, player);
 
         return new BoardDto(board);
     }
@@ -75,6 +78,42 @@ public class BoardServiceV1 {
 
         dealCard(board);
         boardRepository.save(board);
+        return new BoardDto(board);
+    }
+    @Transactional
+    public void seatIn(Board board, Player joinPlayer) {
+        List<Player> players = board.getPlayers();
+
+        boolean[] isExistSeat = new boolean[MAX_PLAYER];
+
+        for (Player player : players) {
+            isExistSeat[player.getPosition().ordinal()] = true;
+        }
+
+        Random random = new Random();
+        int pos = random.nextInt(MAX_PLAYER);
+        for(int i = 0; i < MAX_PLAYER; i++){
+            if(isExistSeat[pos]) {
+                pos = (pos + 1) % MAX_PLAYER;
+            }
+            else {
+                joinPlayer.setPosition(Position.getPositionByNumber(pos));
+                players.add(joinPlayer);
+                break;
+            }
+        }
+    }
+
+    @Transactional
+    public BoardDto start(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+
+        board.setBtn((board.getBtn() + 1) % MAX_PLAYER);
+        dealCard(board);
+        board.setPhaseStatus(PhaseStatus.PRE_FLOP);
+        board.setActionPos(Position.UTG.getPosNum());
+        boardRepository.save(board);
+
         return new BoardDto(board);
     }
 
@@ -130,3 +169,4 @@ public class BoardServiceV1 {
         }
     }
 }
+

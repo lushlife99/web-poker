@@ -15,7 +15,6 @@ public enum Position {
 
     private final int posNum;
 
-    // 숫자를 이용하여 Position 생성
     public static Position getPositionByNumber(int number) {
         for (Position position : Position.values()) {
             if (position.posNum == number) {
