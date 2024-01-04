@@ -37,8 +37,9 @@ public class SessionManager {
     }
 
     public Optional<User> getSession(String sessionId){
-        if(sessionStore.containsKey(sessionId))
+        if(sessionId == null){
             return Optional.empty();
+        } else if(!sessionStore.containsKey(sessionId)) return Optional.empty();
 
         return Optional.of(sessionStore.get(sessionId));
     }

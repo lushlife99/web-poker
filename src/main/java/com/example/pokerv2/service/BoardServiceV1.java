@@ -21,9 +21,11 @@ import java.util.*;
 @RequiredArgsConstructor
 public class BoardServiceV1 {
 
+    private static final int MAX_PLAYER = 6;
     private final BoardRepository boardRepository;
     private final SessionManager sessionManager;
-    private static final int MAX_PLAYER = 6;
+
+
 
     /**
      * 24/01/04 chan
@@ -48,6 +50,8 @@ public class BoardServiceV1 {
         else board = Board.builder().blind(1000).phaseStatus(PhaseStatus.WAITING).build();
 
         Player player = buyIn(board, user, requestBb);
+        List<Player> players = board.getPlayers();
+        players.add(player);
         seatIn(board, player);
 
         return new BoardDto(board);
@@ -66,6 +70,16 @@ public class BoardServiceV1 {
         return player;
     }
 
+    public BoardDto startGame(BoardDto boardDto) {
+        Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        board.setBtn((board.getBtn() + 1) % MAX_PLAYER);
+        board.setActionPos((board.getBtn() + 1) % MAX_PLAYER);
+        board.setPhaseStatus(PhaseStatus.PRE_FLOP);
+
+        dealCard(board);
+        boardRepository.save(board);
+        return new BoardDto(board);
+    }
     @Transactional
     public void seatIn(Board board, Player joinPlayer) {
         List<Player> players = board.getPlayers();
@@ -90,6 +104,7 @@ public class BoardServiceV1 {
         }
     }
 
+    @Transactional
     public BoardDto start(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
 
@@ -128,12 +143,12 @@ public class BoardServiceV1 {
             int playerCard2 = cardList.get(playerCardIndex + 1);
             player.setCard1(playerCard);
             player.setCard2(playerCard2);
-            playerCardIndex+=2;
+            playerCardIndex += 2;
         }
     }
 
-    private void setCommunityCard(Board board, int cardNumber, int card) {
-        switch (cardNumber) {
+    private void setCommunityCard(Board board, int order, int card) {
+        switch (order) {
             case 1:
                 board.setCommunityCard1(card);
                 break;
@@ -153,5 +168,5 @@ public class BoardServiceV1 {
                 break;
         }
     }
-
 }
+

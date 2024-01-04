@@ -25,11 +25,12 @@ public class StompHandler implements ChannelInterceptor {
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
 
-        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+
+        if (StompCommand.CONNECT.equals(accessor.getCommand()) || StompCommand.SEND.equals(accessor.getCommand()) || StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
             String sessionId = accessor.getFirstNativeHeader(SessionManager.SESSION_COOKIE_NAME);
             if (sessionId != null) {
                 Optional<User> user = sessionManager.getSession(sessionId);
-                if(user.isEmpty())
+                if (user.isEmpty())
                     throw new MessageDeliveryException("UNAUTHORIZED");
 
             } else throw new MessageDeliveryException("UNAUTHORIZED");
@@ -37,4 +38,6 @@ public class StompHandler implements ChannelInterceptor {
 
         return message;
     }
+
+
 }
