@@ -27,7 +27,6 @@ public class AuthController {
 
     @PostMapping("/login")
     public UserDto login(@RequestBody User user, HttpServletResponse response) {
-
         return userServiceV1.login(user, response);
     }
 

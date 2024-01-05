@@ -6,6 +6,7 @@ import com.example.pokerv2.model.User;
 import lombok.Data;
 
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -17,7 +18,7 @@ public class UserDto {
     private String userName;
     private int money;
     private HudDto hud;
-    private List<Player> playerList;
+    private List<PlayerDto> playerList;
 
     public UserDto(User user){
         this.id = user.getId();
@@ -25,6 +26,9 @@ public class UserDto {
         this.userName = user.getUserName();
         this.money = user.getMoney();
         this.hud = new HudDto(user.getHud());
-        this.playerList = user.getPlayerList();
+        this.playerList = new ArrayList<>();
+        for (Player player : user.getPlayerList()) {
+            this.playerList.add(new PlayerDto(player));
+        }
     }
 }
