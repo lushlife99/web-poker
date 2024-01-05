@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -40,7 +41,8 @@ public class User {
     @OneToOne
     private Hud hud;
     @OneToMany(mappedBy = "user")
-    private List<Player> playerList;
+    @Builder.Default
+    private List<Player> playerList = new ArrayList<>();
 
 
 }

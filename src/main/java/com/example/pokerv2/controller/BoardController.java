@@ -28,6 +28,7 @@ public class BoardController {
      * @param request
      * @return
      */
+
     @PostMapping("/startGame")
     public BoardDto startGame(@RequestBody BoardDto boardDto, HttpServletRequest request) {
         return boardServiceV1.startGame(boardDto);
