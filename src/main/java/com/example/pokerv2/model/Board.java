@@ -21,19 +21,25 @@ import java.util.List;
  * 총 플레이어의 수를 나타낸다.
  *
  * 2. btn
- *
+ * 액션 순서 및 포지션을 정해줌
  *
  * 3. blind
+ * 게임의 매 판마다 지불하는 입장료
  *
  * 4. pot
+ * 게임의 판돈
  *
  * 5. bettingPos
+ * 베팅이 나온 포지션
  *
  * 6. actionPos
+ * 액션을 물어봐야하는 포지션
  *
  * 7. phaseNum
+ * phase 상태를 나타냄?
  *
  * 8. bettingSize
+ * 베팅 금액
  *
  * 9. communityCard1~5
  * 공유하는 카드들의 번호 저장

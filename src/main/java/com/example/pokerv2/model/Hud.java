@@ -17,6 +17,9 @@ import lombok.NoArgsConstructor;
  *
  * 2. totalHands
  * ?????????
+ * ---------------
+ * 수정
+ * 게임에 참여한 총 횟수
  *
  * 3. vpip
  * 자발적으로 플랍에 참전한 정도

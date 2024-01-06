@@ -14,6 +14,9 @@ import java.util.List;
  *
  * 1. actionCount
  * ????????????
+ * ------------------------
+ * 수정
+ * 액션의 갯수
  *
  * 2. potAmountPf
  * 프리 플랍에서의 베팅된 돈의 합계

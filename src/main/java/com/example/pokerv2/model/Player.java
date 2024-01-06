@@ -1,5 +1,7 @@
 package com.example.pokerv2.model;
 
+import com.example.pokerv2.enums.PlayerStatus;
+import com.example.pokerv2.enums.Position;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,6 +16,9 @@ import lombok.NoArgsConstructor;
  *
  * 2. bb
  * ????????????
+ * --------------
+ * 수정
+ * 칩 단위
  *
  * 3. card1, 2
  * 플레이어가 가지고 있는 카드 정보
@@ -24,6 +29,9 @@ import lombok.NoArgsConstructor;
  *
  * 5. totalCallSize
  * ????????????
+ * -------------------
+ * 수정
+ * 사이드팟이 진행될 때 사용
  *
  */
 
@@ -45,13 +53,13 @@ public class Player {
     @JoinColumn(name = "board_id")
     private Board board;
 
-    private int position;
+    private Position position;
 
     private double bb;
     private int card1;
     private int card2;
-    private int status;
+    private PlayerStatus status;
     private int totalCallSize;
-
+    private int phaseCallSize;
 
 }
