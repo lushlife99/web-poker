@@ -7,7 +7,8 @@ import lombok.Data;
 public class PlayerDto {
 
     private Long id;
-    private UserDto user;
+    private Long userId;
+    private String playerName;
     private Long boardId;
     private int position;
     private double bb;
@@ -19,7 +20,8 @@ public class PlayerDto {
 
     public PlayerDto(Player player) {
         this.id = player.getId();
-        this.user = new UserDto(player.getUser());
+        this.userId = player.getUser().getId();
+        this.playerName = player.getUser().getUserName();
         this.boardId = player.getBoard().getId();
         this.position = player.getPosition().ordinal();
         this.bb = player.getBb();

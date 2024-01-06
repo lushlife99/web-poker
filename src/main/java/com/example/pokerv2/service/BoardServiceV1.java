@@ -10,6 +10,7 @@ import com.example.pokerv2.model.Board;
 import com.example.pokerv2.model.Player;
 import com.example.pokerv2.model.User;
 import com.example.pokerv2.repository.BoardRepository;
+import com.example.pokerv2.repository.PlayerRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class BoardServiceV1 {
     private static final int MAX_PLAYER = 6;
     private final BoardRepository boardRepository;
     private final SessionManager sessionManager;
+    private final PlayerRepository playerRepository;
 
 
 
@@ -54,7 +56,7 @@ public class BoardServiceV1 {
 
         if(board.getTotalPlayer() > 1 && board.getPhaseStatus().equals(PhaseStatus.WAITING))
             startGame(board);
-
+        board = boardRepository.save(board);
         return new BoardDto(board);
     }
 
@@ -68,7 +70,7 @@ public class BoardServiceV1 {
         user.setMoney(user.getMoney() - blind * bb);
         Player player = Player.builder().bb(bb).board(board).status(PlayerStatus.FOLD).user(user).build();
 
-        return player;
+        return playerRepository.save(player);
     }
 
     public BoardDto startGame(Board board) {

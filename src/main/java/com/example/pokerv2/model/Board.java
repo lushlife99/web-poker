@@ -26,7 +26,10 @@ public class Board {
     private int pot;
     private int bettingPos;
     private int actionPos;
-    private PhaseStatus phaseStatus;
+
+    @Enumerated(EnumType.ORDINAL)
+    @Builder.Default
+    private PhaseStatus phaseStatus = PhaseStatus.WAITING;
     private int bettingSize;
 
     private int communityCard1;
