@@ -26,6 +26,7 @@ public class Player {
     @JoinColumn(name = "board_id")
     private Board board;
 
+
     private Position position;
 
     private double bb;
