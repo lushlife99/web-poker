@@ -29,8 +29,8 @@ public class BoardController {
      * @return
      */
 
-    @PostMapping("/startGame")
-    public BoardDto startGame(@RequestBody BoardDto boardDto, HttpServletRequest request) {
-        return boardServiceV1.startGame(boardDto);
-    }
+//    @PostMapping("/startGame")
+//    public BoardDto startGame(@RequestBody BoardDto boardDto, HttpServletRequest request) {
+//        return boardServiceV1.startGame(boardDto);
+//    }
 }

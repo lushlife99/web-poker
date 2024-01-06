@@ -50,9 +50,10 @@ public class BoardServiceV1 {
         else board = Board.builder().blind(1000).phaseStatus(PhaseStatus.WAITING).build();
 
         Player player = buyIn(board, user, requestBb);
-        List<Player> players = board.getPlayers();
-        players.add(player);
         seatIn(board, player);
+
+        if(board.getTotalPlayer() > 1 && board.getPhaseStatus().equals(PhaseStatus.WAITING))
+            startGame(board);
 
         return new BoardDto(board);
     }
@@ -70,8 +71,7 @@ public class BoardServiceV1 {
         return player;
     }
 
-    public BoardDto startGame(BoardDto boardDto) {
-        Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+    public BoardDto startGame(Board board) {
         board.setBtn((board.getBtn() + 1) % MAX_PLAYER);
         board.setActionPos((board.getBtn() + 1) % MAX_PLAYER);
         board.setPhaseStatus(PhaseStatus.PRE_FLOP);
@@ -99,25 +99,13 @@ public class BoardServiceV1 {
             else {
                 joinPlayer.setPosition(Position.getPositionByNumber(pos));
                 players.add(joinPlayer);
+                board.setTotalPlayer(board.getTotalPlayer() + 1);
                 break;
             }
         }
     }
 
-    @Transactional
-    public BoardDto start(Long boardId) {
-        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-
-        board.setBtn((board.getBtn() + 1) % MAX_PLAYER);
-        dealCard(board);
-        board.setPhaseStatus(PhaseStatus.PRE_FLOP);
-        board.setActionPos(Position.UTG.getPosNum());
-        boardRepository.save(board);
-
-        return new BoardDto(board);
-    }
-
-    public void dealCard(Board board) {
+    private void dealCard(Board board) {
         Set<Integer> cards = new HashSet<>();
         Random random = new Random();
 

@@ -25,6 +25,7 @@ public class SessionManager {
         Cookie cookie = new Cookie(SESSION_COOKIE_NAME, sessionId);
         cookie.setMaxAge(3600);
         cookie.setPath("/");
+        cookie.setHttpOnly(true);
         response.addCookie(cookie);
     }
 
