@@ -16,5 +16,4 @@ public enum PhaseStatus {
 
     private final int phaseNum;
 
-
 }

@@ -15,7 +15,8 @@ public class BoardController {
 
     @PostMapping("/joinGame")
     public BoardDto joinGame(@RequestParam int bb, HttpServletRequest request) {
-        return boardServiceV1.join(bb, request);
+        BoardDto join = boardServiceV1.join(bb, request);
+        return join;
     }
 
     /**
