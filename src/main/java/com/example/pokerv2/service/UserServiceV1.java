@@ -34,26 +34,27 @@ public class UserServiceV1 {
 
         Hud hud = new Hud();
         hud.setUser(user);
-        hudRepository.save(hud);
-        savedUser.setHud(hud);
+        Hud saveHud = hudRepository.save(hud);
+        savedUser.setHud(saveHud);
         savedUser.setMoney(10000000);
         savedUser.setPassword(encoder.encode(savedUser.getPassword()));
         savedUser.setRoles(Collections.singletonList("ROLE_USER"));
         userRepository.save(savedUser);
-        return user;
+        return savedUser;
     }
 
-    @Transactional
-    public UserDto login(User loginUser, HttpServletResponse response) {
-        Optional<User> findUser = userRepository.findByUserId(loginUser.getUserId());
-        if(findUser.isEmpty())
-            throw new CustomException(ErrorCode.NOT_EXISTS_USER);
 
-        User user = findUser.get();
-        if(!encoder.matches(loginUser.getPassword(), user.getPassword()))
-            throw new CustomException(ErrorCode.MISMATCH_PASSWORD);
-
-        return new UserDto(user);
-    }
+//    @Transactional
+//    public UserDto login(User loginUser, HttpServletResponse response) {
+//        Optional<User> findUser = userRepository.findByUserId(loginUser.getUserId());
+//        if(findUser.isEmpty())
+//            throw new CustomException(ErrorCode.NOT_EXISTS_USER);
+//
+//        User user = findUser.get();
+//        if(!encoder.matches(loginUser.getPassword(), user.getPassword()))
+//            throw new CustomException(ErrorCode.MISMATCH_PASSWORD);
+//
+//        return new UserDto(user);
+//    }
 
 }

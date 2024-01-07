@@ -26,11 +26,11 @@ public class AuthController {
         return new ResponseEntity(HttpStatus.OK);
     }
 
-    @PostMapping("/login")
-    public UserDto login(@RequestBody User user, HttpServletResponse response) {
-        System.out.println("AuthController.login");
-        return userService.login(user, response);
-    }
+//    @PostMapping("/login")
+//    public UserDto login(@RequestBody User user, HttpServletResponse response) {
+//        System.out.println("AuthController.login");
+//        return userService.login(user, response);
+//    }
 
 
 
