@@ -1,10 +1,13 @@
 package com.example.pokerv2.controller;
 
 import com.example.pokerv2.dto.BoardDto;
+import com.example.pokerv2.model.Board;
 import com.example.pokerv2.service.BoardServiceV1;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
 
 @RequiredArgsConstructor
 @RestController
@@ -14,9 +17,9 @@ public class BoardController {
     private final BoardServiceV1 boardServiceV1;
 
     @PostMapping("/joinGame")
-    public BoardDto joinGame(@RequestParam int bb, HttpServletRequest request) {
-        BoardDto join = boardServiceV1.join(bb, request);
-        return join;
+    public BoardDto joinGame(@RequestParam int bb, Principal principal) {
+        System.out.println("BoardController.joinGame");
+        return boardServiceV1.join(bb, principal);
     }
 
     /**

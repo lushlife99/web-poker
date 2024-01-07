@@ -21,7 +21,7 @@ public class PlayerDto {
     public PlayerDto(Player player) {
         this.id = player.getId();
         this.userId = player.getUser().getId();
-        this.playerName = player.getUser().getUserName();
+        this.playerName = player.getUser().getUsername();
         this.boardId = player.getBoard().getId();
         this.position = player.getPosition().ordinal();
         this.bb = player.getBb();
