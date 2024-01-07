@@ -11,11 +11,13 @@ import com.example.pokerv2.model.Player;
 import com.example.pokerv2.model.User;
 import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.repository.PlayerRepository;
+import com.example.pokerv2.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.Principal;
 import java.util.*;
 
 @Service
@@ -24,7 +26,7 @@ public class BoardServiceV1 {
 
     private static final int MAX_PLAYER = 6;
     private final BoardRepository boardRepository;
-    private final SessionManager sessionManager;
+    private final UserRepository userRepository;
     private final PlayerRepository playerRepository;
 
 
@@ -37,13 +39,11 @@ public class BoardServiceV1 {
      * 1. 플레이 가능한 보드를 찾는다. 없다면 만든다.
      * 2. money를 bb로 환전한다.
      * 3. Player를 만들어서 입장시킨다.
-     * @param request
-     * @return
      */
 
     @Transactional
-    public BoardDto join(int requestBb, HttpServletRequest request) {
-        User user = sessionManager.getSession(request).orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED_USER));
+    public BoardDto join(int requestBb, Principal principal) {
+        User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Board board;
         Optional<Board> playableBoard = boardRepository.findByTotalPlayerBetween(1, 5);
 

@@ -2,6 +2,7 @@ package com.example.pokerv2.controller;
 
 import com.example.pokerv2.dto.UserDto;
 import com.example.pokerv2.model.User;
+import com.example.pokerv2.service.UserAuthenticationService;
 import com.example.pokerv2.service.UserServiceV1;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -16,18 +17,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserServiceV1 userServiceV1;
+    private final UserServiceV1 userService;
 
     @PostMapping("/join")
     public ResponseEntity join(@RequestBody User user) {
-
-        userServiceV1.join(user);
+        System.out.println("AuthController.join");
+        userService.join(user);
         return new ResponseEntity(HttpStatus.OK);
     }
 
     @PostMapping("/login")
     public UserDto login(@RequestBody User user, HttpServletResponse response) {
-        return userServiceV1.login(user, response);
+        System.out.println("AuthController.login");
+        return userService.login(user, response);
     }
 
 
