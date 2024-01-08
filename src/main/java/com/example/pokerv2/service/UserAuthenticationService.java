@@ -39,7 +39,7 @@ public class UserAuthenticationService implements UserDetailsService {
         return new org.springframework.security.core.userdetails.User(
                 user.getUserId(),
                 user.getPassword(),
-                List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                user.getAuthorities()
         );
     }
 
