@@ -21,7 +21,6 @@ public class WebSocketAuthenticatorService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder encoder;
 
-    // This method MUST return a UsernamePasswordAuthenticationToken instance, the spring security chain is testing it with 'instanceof' later on. So don't use a subclass of it or any other class
     public UsernamePasswordAuthenticationToken getAuthenticatedOrFail(final String  username, final String password) throws AuthenticationException {
         if (username == null || username.trim().isEmpty()) {
             throw new AuthenticationCredentialsNotFoundException("Username was null or empty.");

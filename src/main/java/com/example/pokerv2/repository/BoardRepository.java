@@ -1,12 +1,18 @@
 package com.example.pokerv2.repository;
 
-import com.example.pokerv2.model.Board;
+import com.example.pokerv2.model.User;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
+import com.example.pokerv2.model.Board;
+import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface BoardRepository extends JpaRepository<Board, Long> {
 
-    Optional<Board> findByTotalPlayerBetween(int minTotalPlayer, int maxTotalPlayer);
+    @Query("SELECT b FROM Board b WHERE b.totalPlayer < 6 AND NOT EXISTS (SELECT p FROM Player p WHERE p.board = b AND p.user.id = :userId) ORDER BY b.id")
+    List<Board> findFirstPlayableBoard(@Param("userId") Long userId, Pageable pageable);
 }
+

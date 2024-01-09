@@ -1,6 +1,8 @@
 package com.example.pokerv2.service;
 
 import com.example.pokerv2.dto.BoardDto;
+import com.example.pokerv2.dto.MessageDto;
+import com.example.pokerv2.enums.MessageType;
 import com.example.pokerv2.enums.PhaseStatus;
 import com.example.pokerv2.enums.PlayerStatus;
 import com.example.pokerv2.enums.Position;
@@ -14,6 +16,8 @@ import com.example.pokerv2.repository.PlayerRepository;
 import com.example.pokerv2.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +32,7 @@ public class BoardServiceV1 {
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
     private final PlayerRepository playerRepository;
+    private final SimpMessagingTemplate simpMessagingTemplate;
 
 
 
@@ -39,24 +44,27 @@ public class BoardServiceV1 {
      * 1. 플레이 가능한 보드를 찾는다. 없다면 만든다.
      * 2. money를 bb로 환전한다.
      * 3. Player를 만들어서 입장시킨다.
+     *
+     * 일단 네이밍쿼리로 했는데 함수가 너무 긺. -> queryDsl, myBatis 사용 고려해보기.
      */
 
     @Transactional
     public BoardDto join(int requestBb, Principal principal) {
         User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Board board;
-        Optional<Board> playableBoard = boardRepository.findByTotalPlayerBetween(1, 5);
 
-        if(playableBoard.isPresent())
-            board = playableBoard.get();
+        List<Board> playableBoard = boardRepository.findFirstPlayableBoard(user.getId(), PageRequest.of(0,1));
+
+        if(playableBoard.size() != 0)
+            board = playableBoard.get(0);
         else board = Board.builder().blind(1000).phaseStatus(PhaseStatus.WAITING).build();
 
         Player player = buyIn(board, user, requestBb);
         seatIn(board, player);
 
+        board = boardRepository.save(board);
         if(board.getTotalPlayer() > 1 && board.getPhaseStatus().equals(PhaseStatus.WAITING))
             startGame(board);
-        board = boardRepository.save(board);
         return new BoardDto(board);
     }
 
@@ -80,6 +88,7 @@ public class BoardServiceV1 {
 
         dealCard(board);
         boardRepository.save(board);
+        simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.GAME_START.toString(), new BoardDto(board)));
         return new BoardDto(board);
     }
     @Transactional
