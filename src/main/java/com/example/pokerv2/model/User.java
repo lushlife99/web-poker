@@ -59,7 +59,6 @@ public class User implements UserDetails {
         List<SimpleGrantedAuthority> collect = this.roles.stream()
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
-        System.out.println(collect);
         return collect;
     }
 

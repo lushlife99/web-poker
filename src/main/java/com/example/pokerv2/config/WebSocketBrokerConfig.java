@@ -19,7 +19,7 @@ public class WebSocketBrokerConfig implements WebSocketMessageBrokerConfigurer {
     private final StompErrorHandler stompErrorHandler;
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.setApplicationDestinationPrefixes("/pub");
+        registry.setApplicationDestinationPrefixes("/pub"); // /pub prefix가 붙은 url에 message를 서버에게 주는데 -> 함수에 매칭을 해주는거야.
         registry.enableSimpleBroker("/topic", "/queue");
     }
 
