@@ -74,7 +74,6 @@ public class BoardServiceV1 {
         if(!isSeatInBoard(board, playerId))
             throw new CustomException(ErrorCode.BAD_REQUEST, principal);
 
-        board.
     }
 
     public void test(){
