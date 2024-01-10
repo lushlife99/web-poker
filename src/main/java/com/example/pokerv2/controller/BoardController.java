@@ -1,10 +1,14 @@
 package com.example.pokerv2.controller;
 
 import com.example.pokerv2.dto.BoardDto;
+import com.example.pokerv2.error.CustomException;
+import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.model.Board;
 import com.example.pokerv2.service.BoardServiceV1;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -15,11 +19,22 @@ import java.security.Principal;
 public class BoardController {
 
     private final BoardServiceV1 boardServiceV1;
+    private final String PlayerId = "PlayerId";
 
     @PostMapping("/joinGame")
     public BoardDto joinGame(@RequestParam int bb, Principal principal) {
         System.out.println("BoardController.joinGame");
         return boardServiceV1.join(bb, principal);
+    }
+
+    @MessageMapping("/board/action")
+    public void action(@RequestBody BoardDto boardDto, @Header(PlayerId) Long playerId){
+
+    }
+
+    @MessageMapping("/board/test")
+    public void test(Principal principal){
+        throw new CustomException(ErrorCode.BAD_REQUEST);
     }
 
     /**

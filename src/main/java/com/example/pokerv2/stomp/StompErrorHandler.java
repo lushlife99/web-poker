@@ -1,12 +1,16 @@
 package com.example.pokerv2.stomp;
 
+import com.example.pokerv2.error.CustomException;
+import com.example.pokerv2.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.socket.messaging.StompSubProtocolErrorHandler;
 
 import java.util.Set;
@@ -28,19 +32,21 @@ public class StompErrorHandler extends StompSubProtocolErrorHandler {
             Message<byte[]> clientMessage,
             Throwable ex) {
 
-        if ("UNAUTHORIZED".equals(ex.getMessage())) {
+        System.out.println("StompErrorHandler.handleClientMessageProcessingError11111111111");
+        Throwable exception = ex;
+        if (exception instanceof MessageDeliveryException)
+        {
             return errorMessage("UNAUTHORIZED", clientMessage);
         }
+        else if (exception instanceof CustomException) {
+            System.out.println("StompErrorHandler.handleClientMessageProcessingError");
+            return errorMessage(((CustomException) exception).getErrorCode().getDetail(), clientMessage);
+        }
+
 
         return super.handleClientMessageProcessingError(clientMessage, ex);
     }
 
-    /**
-     * 오류 메시지를 포함한 Message 객체를 생성
-     *
-     * @param errorMessage 오류 메시지
-     * @return 오류 메시지를 포함한 Message 객체
-     */
     private Message<byte[]> errorMessage(String errorMessage, Message<byte[]> clientMessage) {
 
         StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.ERROR);

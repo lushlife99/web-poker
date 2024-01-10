@@ -35,7 +35,6 @@ public class BoardServiceV1 {
     private final SimpMessagingTemplate simpMessagingTemplate;
 
 
-
     /**
      * 24/01/04 chan
      *
@@ -66,6 +65,20 @@ public class BoardServiceV1 {
         if(board.getTotalPlayer() > 1 && board.getPhaseStatus().equals(PhaseStatus.WAITING))
             startGame(board);
         return new BoardDto(board);
+    }
+
+    public void action(BoardDto boardDto, Long playerId, Principal principal) {
+        User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST, principal));
+        Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST, principal));
+        Player player = playerRepository.findById(playerId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        if(!isSeatInBoard(board, playerId))
+            throw new CustomException(ErrorCode.BAD_REQUEST, principal);
+
+        board.
+    }
+
+    public void test(){
+        throw new CustomException(ErrorCode.BAD_REQUEST);
     }
 
     @Transactional
@@ -114,6 +127,14 @@ public class BoardServiceV1 {
                 break;
             }
         }
+    }
+
+    private boolean isSeatInBoard(Board board, Long playerId){
+        for (Player player : board.getPlayers()) {
+            if(player.getId().equals(playerId))
+                return true;
+        }
+        return false;
     }
 
     private void dealCard(Board board) {
