@@ -1,5 +1,6 @@
 package com.example.pokerv2.model;
 
+import com.example.pokerv2.dto.BoardDto;
 import com.example.pokerv2.enums.PhaseStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -42,5 +43,22 @@ public class Board {
     @OrderBy("position asc")
     @Builder.Default
     private List<Player> players = new ArrayList<>();
+
+    public void changeBoardStatus(BoardDto boardDto){
+        this.totalPlayer = boardDto.getTotalPlayer();
+        this.btn = boardDto.getBtn();
+        this.blind = boardDto.getBlind();
+        this.pot = boardDto.getPot();
+        this.bettingPos = boardDto.getBettingPos();
+        this.actionPos = boardDto.getActionPos();
+        this.phaseStatus = PhaseStatus.valueOf(boardDto.getPhaseStatus());
+        this.bettingSize = boardDto.getBettingSize();
+        this.communityCard1 = boardDto.getCommunityCard1();
+        this.communityCard2 = boardDto.getCommunityCard2();
+        this.communityCard3 = boardDto.getCommunityCard3();
+        this.communityCard4 = boardDto.getCommunityCard4();
+        this.communityCard5 = boardDto.getCommunityCard5();
+
+    }
 
 }

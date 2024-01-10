@@ -2,6 +2,7 @@ package com.example.pokerv2.service;
 
 import com.example.pokerv2.dto.BoardDto;
 import com.example.pokerv2.dto.MessageDto;
+import com.example.pokerv2.dto.PlayerDto;
 import com.example.pokerv2.enums.MessageType;
 import com.example.pokerv2.enums.PhaseStatus;
 import com.example.pokerv2.enums.PlayerStatus;
@@ -11,10 +12,10 @@ import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.model.Board;
 import com.example.pokerv2.model.Player;
 import com.example.pokerv2.model.User;
+import com.example.pokerv2.repository.ActionRepository;
 import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.repository.PlayerRepository;
 import com.example.pokerv2.repository.UserRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -33,6 +34,7 @@ public class BoardServiceV1 {
     private final UserRepository userRepository;
     private final PlayerRepository playerRepository;
     private final SimpMessagingTemplate simpMessagingTemplate;
+    private final ActionRepository actionRepository;
 
 
     /**
@@ -67,13 +69,130 @@ public class BoardServiceV1 {
         return new BoardDto(board);
     }
 
+    /**
+     * 액션을 받을 때 고려해야 할 것
+     * 1. 플레이어들의 액션이 다 끝났는가? true -> 다음 페이즈. false -> 다음 액션 순서 정해주기
+     * 플레이어들의 액션이 다 끝났는지 어떻게 알 수 있을까?
+     *
+     * 베팅을 받을 수 있는 상태의 플레이어가 없을 때 -> PlayerStatus 확인
+     *
+     * 2. 플레이어가 어떤 액션을 했는지 확인.
+     * fold, all-in -> playerStatus를 확인
+     * call -> board.bet == player.callSize
+     * bet -> board.bet < player.callSize
+     *
+     * 3. 다음 액션 순서를 정해주는 방법
+     *
+     * 먼저 현재 액션 순서인 플레이어를 기준으로 잡는다.
+     *  1. 그 다음 순서의 플레이어가 액션을 할 수 있는 상태인지 체크한다. -> playerStatus
+     *  2. 만약 액션을 할 수 있는 상태라면 마지막 액션을 했던 플레이어인지 체크한다.
+     *
+     * 만약 1,2 모두 true : 현재 보드의 모든 플레이어들의 의사결정이 완료. -> 다음 페이즈 진행
+     * 만약 1 -> true, 2 -> false : 그 플레이어가 다음 액션 순서이다.
+     * 만약 1 -> false : 모든 플레이어가 액션을 할 수 없는 상태. 그러니까 베팅을 한 유저를 제외한 모든 유저들이 fold or all-in인 상태.
+     * 모두 폴드라면 -> 베팅을 한 플레이어 승리.
+     * all-in인 유저가 존재한다면 : 승자를 가려야 함. show-down 진행
+     *
+     *
+     *
+     * @param boardDto
+     * @param playerId
+     * @param principal
+     */
+
+    @Transactional
     public void action(BoardDto boardDto, Long playerId, Principal principal) {
         User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST, principal));
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST, principal));
-        Player player = playerRepository.findById(playerId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-        if(!isSeatInBoard(board, playerId))
+        Player player = playerRepository.findById(playerId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST, principal));
+        List<PlayerDto> players = boardDto.getPlayers();
+        PlayerDto actPlayer = players.get(boardDto.getActionPos());
+        board.changeBoardStatus(boardDto);
+        int actionPos = board.getActionPos();
+        boolean isAllInPlayerExist = false;
+
+        if (!isSeatInBoard(board, playerId))
             throw new CustomException(ErrorCode.BAD_REQUEST, principal);
 
+        saveAction(boardDto, principal); // actionService -> migration
+
+
+        for (int i = 1; i <= board.getTotalPlayer(); i++) {
+            PlayerDto nextActionCandidate = players.get((actionPos + i) % MAX_PLAYER);
+            if (nextActionCandidate.getStatus() == PlayerStatus.PLAY.ordinal()) {
+                if (nextActionCandidate.getPosition() != board.getBettingPos()) {
+                    board.setActionPos((actionPos + i) % MAX_PLAYER);
+                    simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.NEXT_ACTION.toString(), new BoardDto(board)));
+                    return;
+                } else {
+                    board = beforeNextPhase(boardDto, principal);
+                    nextPhase(board);
+                    simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.toString(), new BoardDto(board)));
+                    return;
+                }
+            } else if (nextActionCandidate.getStatus() == PlayerStatus.ALL_IN.ordinal()){
+                isAllInPlayerExist = true;
+            }
+        }
+
+        // 게임 종료.
+        // 모두 폴드 -> 베팅 한 플레이어 승리.
+        // 올인한 플레이어 존재 -> 쇼다운 로직 짜기.
+        if(isAllInPlayerExist){
+
+        } else {
+
+        }
+
+    }
+
+    @Transactional
+    private void nextPhase(Board board) {
+        if(board.getPhaseStatus() == PhaseStatus.PRE_FLOP)
+            board.setPhaseStatus(PhaseStatus.FLOP);
+        else if(board.getPhaseStatus() == PhaseStatus.FLOP)
+            board.setPhaseStatus(PhaseStatus.TURN);
+        else if(board.getPhaseStatus() == PhaseStatus.TURN)
+            board.setPhaseStatus(PhaseStatus.RIVER);
+        else if(board.getPhaseStatus() == PhaseStatus.RIVER){
+            //쇼다운 함수 호출
+
+        }
+
+    }
+
+    /**
+     * 다음 페이즈에 진입하기 전에 보드 상태를 초기화한다.
+     * @param boardDto
+     * @return
+     */
+    private Board beforeNextPhase(BoardDto boardDto, Principal principal) {
+        List<PlayerDto> players = boardDto.getPlayers();
+
+        for(int i = Position.UTG.getPosNum(); i < boardDto.getTotalPlayer(); i++) {
+            boardDto.setPot(boardDto.getPot() + players.get(i).getPhaseCallSize());
+            if(players.get(i).getStatus() == PlayerStatus.PLAY.ordinal())
+                boardDto.setActionPos(i);
+        }
+
+        Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST, principal));
+        board.changeBoardStatus(boardDto);
+
+        return boardRepository.save(board);
+    }
+    private void saveAction(BoardDto boardDto, Principal principal) {
+        List<PlayerDto> players = boardDto.getPlayers();
+        PlayerDto actPlayer = players.get(boardDto.getActionPos());
+        if(actPlayer.getStatus() == PlayerStatus.FOLD.ordinal()){
+            //fold
+
+        } else if (actPlayer.getStatus() == PlayerStatus.ALL_IN.ordinal()){
+            //all-in
+        } else if (actPlayer.getStatus() == PlayerStatus.PLAY.ordinal() && boardDto.getActionPos() == boardDto.getBettingPos()) {
+            //bet
+        } else if (actPlayer.getStatus() == PlayerStatus.PLAY.ordinal() && actPlayer.getPhaseCallSize() == boardDto.getBettingSize()){
+            //call
+        } else throw new CustomException(ErrorCode.BAD_REQUEST, principal);
     }
 
     public void test(){
