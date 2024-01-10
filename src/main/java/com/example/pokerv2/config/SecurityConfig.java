@@ -1,7 +1,8 @@
 package com.example.pokerv2.config;
 
+import com.example.pokerv2.model.User;
+import com.example.pokerv2.repository.UserRepository;
 import com.example.pokerv2.service.UserAuthenticationService;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,12 +15,14 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig  {
 
     private final UserAuthenticationService userAuthenticationService;
+    private final UserRepository userRepository;
 
     @Bean
     public BCryptPasswordEncoder encodePwd() {
@@ -40,6 +43,10 @@ public class SecurityConfig  {
                         formLogin
                                 .loginProcessingUrl("/login")
                                 .successHandler((httpServletRequest, httpServletResponse, authentication) -> {
+                                    Optional<User> user = userRepository.findByUserId(authentication.getName());
+                                    if(user.isPresent()) {
+                                        httpServletResponse.setHeader("SUBSCRIBE-ID", user.get().getId().toString());
+                                    }
                                 })
 
                 )

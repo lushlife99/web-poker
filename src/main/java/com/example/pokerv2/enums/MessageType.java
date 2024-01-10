@@ -4,7 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 public enum MessageType {
-    GAME_START
+    GAME_START,
+    ERROR,
 
 
 }
