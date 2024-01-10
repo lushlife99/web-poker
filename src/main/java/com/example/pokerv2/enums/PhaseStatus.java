@@ -16,4 +16,12 @@ public enum PhaseStatus {
 
     private final int phaseNum;
 
+    public static PhaseStatus valueOf(int phaseNum) {
+        for (PhaseStatus status : PhaseStatus.values()) {
+            if (status.getPhaseNum() == phaseNum) {
+                return status;
+            }
+        }
+        throw new IllegalArgumentException("Invalid phaseNum: " + phaseNum);
+    }
 }

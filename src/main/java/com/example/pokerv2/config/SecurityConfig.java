@@ -23,7 +23,7 @@ public class SecurityConfig  {
 
     private final UserAuthenticationService userAuthenticationService;
     private final UserRepository userRepository;
-
+    private final static String SUBSCRIBE_HEADER = "SUBSCRIBE-ID";
     @Bean
     public BCryptPasswordEncoder encodePwd() {
         return new BCryptPasswordEncoder();
@@ -45,7 +45,7 @@ public class SecurityConfig  {
                                 .successHandler((httpServletRequest, httpServletResponse, authentication) -> {
                                     Optional<User> user = userRepository.findByUserId(authentication.getName());
                                     if(user.isPresent()) {
-                                        httpServletResponse.setHeader("SUBSCRIBE-ID", user.get().getId().toString());
+                                        httpServletResponse.setHeader(SUBSCRIBE_HEADER, user.get().getId().toString());
                                     }
                                 })
 
@@ -66,6 +66,7 @@ public class SecurityConfig  {
         configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000"));
         configuration.setAllowedMethods(Arrays.asList("HEAD","POST","GET","DELETE","PUT"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setExposedHeaders(Arrays.asList(SUBSCRIBE_HEADER));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
