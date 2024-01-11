@@ -9,12 +9,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.Optional;
+import java.security.Principal;
 
 @Slf4j
-@RestControllerAdvice
 @RequiredArgsConstructor
 public class GlobalWebsocketExHandler {
 
@@ -22,11 +20,14 @@ public class GlobalWebsocketExHandler {
     private final UserRepository userRepository;
 
     @MessageExceptionHandler(CustomException.class)
-    public void handleCustomException(CustomException ex) {
+    public void handleCustomException(CustomException ex, Principal principal) {
 
-        userRepository.findByUserId(ex.getPrincipal().getName())
-                .ifPresent(u -> simpMessagingTemplate.convertAndSend("/queue/error/" + u.getId(), new MessageDto(MessageType.ERROR.toString(), ex)));
+        if (principal != null) {
+            userRepository.findByUserId(principal.getName())
+                    .ifPresent(u -> simpMessagingTemplate.convertAndSend("/queue/error/" + u.getId(), new MessageDto(MessageType.ERROR.toString(), ex)));
+        } else {
+            log.warn("Principal is null. Unable to handle exception.");
+        }
 
     }
-
 }

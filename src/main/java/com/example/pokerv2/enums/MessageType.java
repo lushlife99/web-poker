@@ -8,6 +8,7 @@ public enum MessageType {
     ERROR,
     NEXT_PHASE_START,
     NEXT_ACTION,
+    GAME_RESULT,
 
 
 }

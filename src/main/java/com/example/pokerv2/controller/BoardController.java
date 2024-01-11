@@ -7,9 +7,12 @@ import com.example.pokerv2.model.Board;
 import com.example.pokerv2.service.BoardServiceV1;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
 
 import java.security.Principal;
 
@@ -19,22 +22,28 @@ import java.security.Principal;
 public class BoardController {
 
     private final BoardServiceV1 boardServiceV1;
-    private final String PlayerId = "PlayerId";
+    private static final String PlayerId = "PlayerId";
 
     @PostMapping("/joinGame")
     public BoardDto joinGame(@RequestParam int bb, Principal principal) {
+
         System.out.println("BoardController.joinGame");
         return boardServiceV1.join(bb, principal);
     }
 
     @MessageMapping("/board/action")
-    public void action(@RequestBody BoardDto boardDto, @Header(PlayerId) Long playerId){
-
+    public void action(@RequestBody BoardDto boardDto, @Header(PlayerId) Long playerId, Principal principal){
+        boardServiceV1.action(boardDto, playerId, principal);
     }
 
     @MessageMapping("/board/test")
     public void test(Principal principal){
-        throw new CustomException(ErrorCode.BAD_REQUEST);
+        System.out.println(principal.getName());
+    }
+
+    @PostMapping("/test")
+    public ResponseEntity httpTest(HttpServletRequest request){
+        return new ResponseEntity(HttpStatus.OK);
     }
 
     /**

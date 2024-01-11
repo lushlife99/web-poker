@@ -10,9 +10,5 @@ import java.security.Principal;
 @AllArgsConstructor
 public class CustomException extends RuntimeException{
     private final ErrorCode errorCode;
-    private Principal principal;
 
-    public CustomException(ErrorCode errorCode){
-        this.errorCode = errorCode;
-    }
 }
