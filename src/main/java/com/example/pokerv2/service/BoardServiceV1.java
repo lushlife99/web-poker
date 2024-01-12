@@ -17,8 +17,7 @@ import com.example.pokerv2.repository.ActionRepository;
 import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.repository.PlayerRepository;
 import com.example.pokerv2.repository.UserRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -143,9 +142,12 @@ public class BoardServiceV1 {
             }
         }
 
-        // 게임 종료.
-        // if 올인한 플레이어 존재 -> 쇼다운 로직 짜기.
-        // else 모두 폴드 -> 베팅 한 플레이어 승리.
+        /**
+         * 게임이 종료된 시점.
+         * if 올인한 플레이어 존재 -> 쇼다운 로직 짜기.
+         * else 모두 폴드 -> 베팅 한 플레이어 승리.
+         */
+
         if(isAllInPlayerExist){
             GameResultDto gameResultDto = showDown(board);
             takePot(board);
@@ -237,6 +239,9 @@ public class BoardServiceV1 {
         board.setPhaseStatus(PhaseStatus.PRE_FLOP);
 
         dealCard(board);
+        for (Player player : board.getPlayers()) {
+            player.setStatus(PlayerStatus.PLAY);
+        }
         boardRepository.save(board);
         simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.GAME_START.toString(), new BoardDto(board)));
         return board;
