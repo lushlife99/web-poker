@@ -64,15 +64,13 @@ public class BoardServiceV1 {
         if(playableBoard.size() != 0)
             board = playableBoard.get(0);
         else board = Board.builder().blind(1000).phaseStatus(PhaseStatus.WAITING).build();
-
         Player player = buyIn(board, user, requestBb);
         seatIn(board, player);
-
         board = boardRepository.save(board);
-        if(board.getTotalPlayer() > 1 && board.getPhaseStatus().equals(PhaseStatus.WAITING))
-            startGame(board);
-
         simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.PLAYER_JOIN.toString(), new BoardDto(board)));
+        if(board.getTotalPlayer() > 1 && board.getPhaseStatus().equals(PhaseStatus.WAITING)) {
+            board = startGame(board);
+        }
         return new BoardDto(board);
     }
 
@@ -233,7 +231,7 @@ public class BoardServiceV1 {
         return playerRepository.save(player);
     }
 
-    public BoardDto startGame(Board board) {
+    public Board startGame(Board board) {
         board.setBtn((board.getBtn() + 1) % MAX_PLAYER);
         board.setActionPos((board.getBtn() + 1) % MAX_PLAYER);
         board.setPhaseStatus(PhaseStatus.PRE_FLOP);
@@ -241,7 +239,7 @@ public class BoardServiceV1 {
         dealCard(board);
         boardRepository.save(board);
         simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.GAME_START.toString(), new BoardDto(board)));
-        return new BoardDto(board);
+        return board;
     }
     @Transactional
     public void seatIn(Board board, Player joinPlayer) {
