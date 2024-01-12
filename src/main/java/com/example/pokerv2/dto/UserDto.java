@@ -14,7 +14,7 @@ public class UserDto {
     public UserDto(User user){
         this.id = user.getId();
         this.userId = user.getUserId();
-        this.userName = user.getUserName();
+        this.userName = user.getUsername();
         this.money = user.getMoney();
         this.hud = new HudDto(user.getHud());
     }
