@@ -27,7 +27,6 @@ public class BoardController {
     @PostMapping("/joinGame")
     public BoardDto joinGame(@RequestParam int bb, Principal principal) {
 
-        System.out.println("BoardController.joinGame");
         return boardServiceV1.join(bb, principal);
     }
 
