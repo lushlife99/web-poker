@@ -1,12 +1,16 @@
 package com.example.pokerv2.service;
 
 
+import com.example.pokerv2.enums.PlayerStatus;
 import com.example.pokerv2.model.Board;
 import com.example.pokerv2.model.Player;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.yaml.snakeyaml.util.ArrayUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +28,7 @@ public class HandCalculator {
      * @param board
      */
 
-    public static int calculate(Board board) {
+    public int[] calculateValue(Board board) {
         List<Player> players = board.getPlayers();
         List<Integer> cards = new ArrayList<>();
         cards.add(board.getCommunityCard1());
@@ -32,51 +36,96 @@ public class HandCalculator {
         cards.add(board.getCommunityCard3());
         cards.add(board.getCommunityCard4());
         cards.add(board.getCommunityCard5());
+        List<Integer> handValueList = new ArrayList<>(board.getTotalPlayer()); // 각 플레이어의 족보의 세기를 int형식으로 저장.
+        List<Integer> jokBoList = new ArrayList<>();
 
+        int cnt = 0;
         for (Player player : players) {
             cards.add(player.getCard1());
             cards.add(player.getCard2());
             Collections.sort(cards, Collections.reverseOrder());
-            if (hasRoyalFlush(cards)) {
-                return 900;
+
+            if(player.getStatus().equals(PlayerStatus.FOLD)) {
+                handValueList.add(0);
             }
 
-            else if (hasStraightFlush(cards)) {
-                return 800 + calculateHighCard(cards);
+            int value = royalFlushValue(cards, jokBoList);
+
+            if (value == 0) {
+                handValueList.add(90000);
             }
 
-            else if (hasFourOfAKind(cards)) {
-                int fourOfAKindValue = calculateFourOfAKindValue(cards);
-                int highCard = calculateHighCard(cards);
-                return 700 + ((fourOfAKindValue + 1) * 13) + highCard;
+            value = straightFlushValue(cards, jokBoList);
+
+            if (value != -1) {
+                handValueList.add(80000 + value);
             }
 
-            else if (hasFullHouse(cards)) {
-                return 600 + calculateFullHouseValue(cards);
+            value = fourOfAKindValue(cards, jokBoList);
+
+            if(value != -1){
+                handValueList.add(70000 + value);
             }
+
+            value = fullHouseValue(cards, jokBoList);
+
+            if (value != -1) {
+                handValueList.add(60000 + value);
+            }
+            /**
+             * 24/01/14
+             * 여기까지 완료. 다음부터 플러쉬 짜기.
+             */
 
             else if (hasFlush(cards)) {
-                return 500 + calculateHighCard(cards);
+                handValueList.add(50000 + value);
             }
 
             else if (hasStraight(cards)) {
-                return 400 + calculateHighCard(cards);
+                handValueList.add(40000 + value);
             }
 
             else if (hasThreeOfAKind(cards)) {
-                return 300 + calculateThreeOfAKindValue(cards);
+                handValueList.add(30000 + value);
             }
 
             else if (hasTwoPair(cards)) {
-                return 200 + calculateTwoPairValue(cards);
+                handValueList.add(20000 + value);
             }
 
             else if (hasOnePair(cards)) {
-                return 100 + calculateOnePairValue(cards);
+
+                handValueList.add(10000 + value);
+            }
+
+            else {
+                handValueList.add(calculateHighCard(cards, jokBoList));
+            }
+            cards.remove(5);
+            cards.remove(6);
+        }
+
+        return null;
+    }
+
+    private static int getStraightFlushHighCard(List<Integer> cards) {
+        Map<Integer, Integer> rankCount = new HashMap<>();
+
+        for (Integer card : cards) {
+            int rank = card % 13;
+            rankCount.put(rank, rankCount.getOrDefault(rank, 0) + 1);
+        }
+
+        int maxRank = -1;
+
+        for (Integer card : cards) {
+            int rank = card % 13;
+            if (rankCount.get(rank) >= 5) {
+                maxRank = Math.max(maxRank, rank);
             }
         }
 
-        return calculateHighCard(cards);
+        return maxRank;
     }
 
     private static int calculateOnePairValue(List<Integer> cards) {
@@ -149,21 +198,37 @@ public class HandCalculator {
     }
 
     private static int calculateFourOfAKindValue(List<Integer> cards) {
-        Map<Integer, Integer> rankCount = new HashMap<>();
+        int[] countArray = new int[13];
+        for (int card : cards) {
+            int number = card % 13;
+            countArray[number]++;
+        }
+        int fourCardValue = 0;
+        int highCardValue = -1;
+        int[] result = new int[2];
 
-        for (Integer card : cards) {
-            int rank = card % 13;
-            rankCount.put(rank, rankCount.getOrDefault(rank, 0) + 1);
 
-            if (rankCount.get(rank) == 4) {
-                return rank;
+        for (int i = 0; i < countArray.length; i++) {
+            if (countArray[i] == 4) {
+                fourCardValue = i;
+
+
+
+                for (int j = countArray.length - 1; j >= 0; j--) {
+                    if (countArray[j] > 0 && j != i) {
+                        highCardValue = j;
+                        break;
+                    }
+                }
+
+                break;
             }
         }
 
-        return -1;
+        return (fourCardValue + 1) * 13 + highCardValue;
     }
 
-    private static int calculateHighCard(List<Integer> cards) {
+    private static int calculateHighCard(List<Integer> cards, List<Integer> jokBo) {
         int highestCard = -1;
 
         for (Integer card : cards) {
@@ -262,7 +327,14 @@ public class HandCalculator {
         return false;
     }
 
-    private static boolean hasFullHouse(List<Integer> cards) {
+    /**
+     * fullHouseValue
+     *
+     * @param cards 내림차 순으로 정렬된 카드 리스트.
+     * @param jokBo 만약 조건이 만족할 경우 족보를 이루는 5개의 카드를 담아줌.
+     * @return 풀하우스의 밸류. (트리플의 밸류(우선순위) && 페어의 밸류)
+     */
+    private static int fullHouseValue(List<Integer> cards, List<Integer> jokBo) {
         Map<Integer, Integer> rankCount = new HashMap<>();
 
         for (Integer card : cards) {
@@ -272,34 +344,94 @@ public class HandCalculator {
 
         boolean hasThreeOfAKind = false;
         boolean hasTwoOfAKind = false;
+        int threeOfKindValue = -1;
+        int twoOfKindValue = -1;
 
-        for (int count : rankCount.values()) {
+        for (Map.Entry<Integer, Integer> entry : rankCount.entrySet()) {
+            int count = entry.getValue();
+            int rank = entry.getKey();
+
             if (count == 3) {
+                threeOfKindValue = rank;
                 hasThreeOfAKind = true;
             } else if (count == 2) {
+                twoOfKindValue = rank;
                 hasTwoOfAKind = true;
             }
         }
 
-        return hasThreeOfAKind && hasTwoOfAKind;
+        if (hasThreeOfAKind && hasTwoOfAKind) {
+            jokBo.clear();
+            for (Integer card : cards) {
+                int rank = card % 13;
+                if (rank == threeOfKindValue) {
+                    jokBo.add(card);
+                }
+            }
+
+            for (Integer card : cards) {
+                int rank = card % 13;
+                if (rank == twoOfKindValue) {
+                    jokBo.add(card);
+                    if(jokBo.size() == 5)
+                        break;
+                }
+            }
+            return (threeOfKindValue + 1) * 100 + twoOfKindValue;
+        }
+
+        return -1;
     }
 
-    private static boolean hasFourOfAKind(List<Integer> cards) {
-        Map<Integer, Integer> rankCount = new HashMap<>();
+    /**
+     * fourOfAKindValue
+     *
+     * @param cards 내림차 순으로 정렬된 카드 리스트.
+     * @param jokBo 만약 조건이 만족할 경우 족보를 이루는 5개의 카드를 담아줌.
+     * @return 포카드의 밸류. (포카드의 밸류 && 포카드를 제외한 나머지 카드중 하이카드)
+     */
+    private static int fourOfAKindValue(List<Integer> cards, List<Integer> jokBo) {
+        int[] ranks = new int[13];
+        for (int card : cards) {
+            ranks[card%13]++;
+        }
 
-        for (Integer card : cards) {
-            int rank = card % 13;
-            rankCount.put(rank, rankCount.getOrDefault(rank, 0) + 1);
+        for (int i = 0; i < ranks.length; i++) {
+            if (ranks[i] == 4) {
+                int fourAKindValue = -1;
+                int highCardValue = -1;
+                for (int j = 0; j < cards.size(); j++) {
+                    int card = cards.get(j);
+                    if (card % 13 == i) {
+                        fourAKindValue = i;
+                        jokBo.add(card);
+                    }
+                }
 
-            if (rankCount.get(rank) == 4) {
-                return true;
+                for (Integer card : cards) {
+                    if(card % 13 != fourAKindValue){
+                        highCardValue = card % 13;
+                        break;
+                    }
+                }
+                return (fourAKindValue + 1) * 100 + highCardValue;
             }
         }
 
-        return false;
+        return -1;
     }
 
-    private static boolean hasStraightFlush(List<Integer> cards) {
+    /**
+     * straightFlushValue
+     *
+     * @param cards 내림차 순으로 정렬된 카드 리스트.
+     * @param jokBo 만약 조건이 만족할 경우 족보를 이루는 5개의 카드를 담아줌.
+     * @return 스트레이트 플러시의 밸류. (스티플의 하이카드)
+     */
+    private static int straightFlushValue(List<Integer> cards, List<Integer> jokBo) {
+
+        int value = -1;
+
         for (int i = 0; i <= cards.size() - 5; i++) {
             boolean isStraightFlush = true;
 
@@ -307,39 +439,52 @@ public class HandCalculator {
                 int currentCard = cards.get(i + j);
                 int nextCard = cards.get(i + j + 1);
 
-                if ((currentCard % 13) + 1 != nextCard % 13 || currentCard / 13 != nextCard / 13) {
+                if ((currentCard % 13) - 1 != nextCard % 13 || currentCard / 13 != nextCard / 13) {
+                    jokBo.clear();
                     isStraightFlush = false;
+                    value = -1;
                     break;
+                }
+                jokBo.add(currentCard);
+                if(j == 3){
+                    value = j + 4;
+                    jokBo.add(nextCard);
                 }
             }
 
             if (isStraightFlush) {
-                return true;
+                return value;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * royalFlushValue
+     *
+     * @param cards 내림차 순으로 정렬된 카드 리스트.
+     * @param jokBo 만약 조건이 만족할 경우 족보를 이루는 5개의 카드를 담아줌.
+     * @return 로티플 true -> 0. false -> -1
+     */
+    private static int royalFlushValue(List<Integer> cards, List<Integer> jokBo) {
+
+        List<Integer> list = Arrays.asList(8, 9, 10, 11, 12);
+        Collections.sort(cards);
+        int cnt = 0;
+        while(true) {
+            if (cards.containsAll(list)) {
+                jokBo = List.copyOf(list);
+                return 0;
+            } else {
+                list = list.stream()
+                        .map(card -> card + 13)
+                        .collect(Collectors.toList());
+                if(cnt == 4){
+                    break;
+                }
             }
         }
 
-        return false;
+        return -1;
     }
-
-    private static boolean hasRoyalFlush(List<Integer> cards) {
-        int royalFlushSuit = -1;
-
-        for (Integer card : cards) {
-            int rank = card % 13;
-            int suit = card / 13;
-
-            if (rank < 9 || rank > 12) {
-                return false;
-            }
-
-            if (royalFlushSuit == -1) {
-                royalFlushSuit = suit;
-            } else if (royalFlushSuit != suit) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
 }

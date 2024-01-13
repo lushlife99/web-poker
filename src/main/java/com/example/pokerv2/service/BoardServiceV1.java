@@ -233,18 +233,60 @@ public class BoardServiceV1 {
         return playerRepository.save(player);
     }
 
+    /**
+     * 첫번째 베팅 순서를 어떻게 정할까?
+     * 1. 프리플랍 : BB 다음 포지션
+     * 2. 프리플랍 이후 : btn 다음 포지션
+     *
+     * 주의 해야 할 것.
+     * 각 포지션이 모두 차있다고 생각하지 말 것.
+     * 예를들어서 btn 포지션에 무조건 사람이 앉아있는 것이 아님.
+     *
+     * @param board
+     * @return
+     */
     public Board startGame(Board board) {
-        board.setBtn((board.getBtn() + 1) % MAX_PLAYER);
-        board.setActionPos((board.getBtn() + 1) % MAX_PLAYER);
-        board.setPhaseStatus(PhaseStatus.PRE_FLOP);
 
+        int finalPlayerPos = getFinalPlayerPos(board).getPosNum();
+
+        board.setActionPos((finalPlayerPos + 1) % MAX_PLAYER);
+        board.setPhaseStatus(PhaseStatus.PRE_FLOP);
         dealCard(board);
         for (Player player : board.getPlayers()) {
             player.setStatus(PlayerStatus.PLAY);
         }
+
         boardRepository.save(board);
         simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.GAME_START.toString(), new BoardDto(board)));
         return board;
+    }
+
+    /**
+     * getFinalPlayerPos
+     *
+     * return -> 가장 마지막에 액션할 플레이어의 포지션
+     *
+     * if btn포지션에 Player가 존재할 경우 -> player 리턴.
+     * else -> btn포지션에 가장 가까운 마지막 액션 플레이어 리턴.
+     * @param board
+     */
+    private Position getFinalPlayerPos(Board board) {
+
+        List<Player> players = board.getPlayers();
+        Position finalActPos = null;
+        for (Player player : players) {
+            if(player.getPosition().equals(Position.BTN)) {
+                return Position.BTN;
+            } else if (player.getPosition().getPosNum() < Position.BTN.getPosNum()) {
+                finalActPos = player.getPosition();
+            }
+        }
+
+        if(finalActPos != null) {
+            return finalActPos;
+        } else {
+            return Position.BB;
+        }
     }
     @Transactional
     public void seatIn(Board board, Player joinPlayer) {
