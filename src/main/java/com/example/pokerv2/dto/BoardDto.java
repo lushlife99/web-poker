@@ -12,15 +12,12 @@ public class BoardDto {
 
     private Long id;
     private int totalPlayer;
-
-    private int btn;
     private int blind;
     private int pot;
     private int bettingPos;
     private int actionPos;
     private int phaseStatus;
     private int bettingSize;
-
     private int communityCard1;
     private int communityCard2;
     private int communityCard3;
@@ -32,7 +29,6 @@ public class BoardDto {
     public BoardDto(Board board) {
         this.id = board.getId();
         this.totalPlayer = board.getTotalPlayer();
-        this.btn = board.getBtn();
         this.blind = board.getBlind();
         this.pot = board.getPot();
         this.bettingPos = board.getBettingPos();

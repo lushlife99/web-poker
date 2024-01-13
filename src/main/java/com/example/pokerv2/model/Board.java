@@ -21,8 +21,6 @@ public class Board {
     @Id @GeneratedValue
     private Long id;
     private int totalPlayer;
-    @Builder.Default
-    private int btn = 0;
     private int blind;
     private int pot;
     private int bettingPos;
@@ -39,14 +37,13 @@ public class Board {
     private int communityCard4;
     private int communityCard5;
 
-    @OneToMany(mappedBy = "board")
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL)
     @OrderBy("position asc")
     @Builder.Default
     private List<Player> players = new ArrayList<>();
 
     public void changeBoardStatus(BoardDto boardDto){
         this.totalPlayer = boardDto.getTotalPlayer();
-        this.btn = boardDto.getBtn();
         this.blind = boardDto.getBlind();
         this.pot = boardDto.getPot();
         this.bettingPos = boardDto.getBettingPos();
