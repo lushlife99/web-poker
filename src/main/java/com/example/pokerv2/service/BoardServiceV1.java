@@ -58,7 +58,6 @@ public class BoardServiceV1 {
 
         List<Board> playableBoard = boardRepository.findFirstPlayableBoard(user.getId(), PageRequest.of(0,1));
 
-
         if(playableBoard.size() != 0)
             board = playableBoard.get(0);
         else board = Board.builder().blind(1000).phaseStatus(PhaseStatus.WAITING).build();
@@ -67,7 +66,7 @@ public class BoardServiceV1 {
         board = boardRepository.save(board);
         simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.PLAYER_JOIN.getDetail(), new BoardDto(board)));
         if(board.getTotalPlayer() > 1 && board.getPhaseStatus().equals(PhaseStatus.WAITING)) {
-            board = startGame(board);
+            board = startGame(board.getId());
         }
         return new BoardDto(board);
     }
@@ -243,11 +242,12 @@ public class BoardServiceV1 {
      * 각 포지션이 모두 차있다고 생각하지 말 것.
      * 예를들어서 btn 포지션에 무조건 사람이 앉아있는 것이 아님.
      *
-     * @param board
+     * @param boardId
      * @return
      */
-    public Board startGame(Board board) {
+    public Board startGame(Long boardId) {
 
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         setActionPos(board);
         board.setPhaseStatus(PhaseStatus.PRE_FLOP);
         dealCard(board);
