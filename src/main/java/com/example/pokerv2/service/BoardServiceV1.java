@@ -53,6 +53,7 @@ public class BoardServiceV1 {
 
     @Transactional
     public BoardDto join(int requestBb, Principal principal) {
+        System.out.println(principal.getName());
         User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Board board;
 
@@ -228,7 +229,7 @@ public class BoardServiceV1 {
             throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
 
         user.setMoney(user.getMoney() - blind * bb);
-        Player player = Player.builder().bb(bb).board(board).status(PlayerStatus.FOLD).user(user).build();
+        Player player = Player.builder().money(blind * bb).board(board).status(PlayerStatus.FOLD).user(user).build();
 
         return playerRepository.save(player);
     }
@@ -254,7 +255,6 @@ public class BoardServiceV1 {
                 board.setActionPos(player.getPosition().getPosNum());
             }
         }
-        board.setActionPos((finalPlayerPos + 1) % MAX_PLAYER);
         board.setPhaseStatus(PhaseStatus.PRE_FLOP);
         dealCard(board);
         for (Player player : board.getPlayers()) {

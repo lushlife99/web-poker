@@ -29,7 +29,7 @@ public class Player {
 
     private Position position;
 
-    private double bb;
+    private int money;
     private int card1;
     private int card2;
     private PlayerStatus status;
@@ -37,7 +37,7 @@ public class Player {
     private int phaseCallSize;
 
     public void changePlayerStatus(PlayerDto playerDto) {
-        this.bb = playerDto.getBb();
+        this.money = playerDto.getMoney();
         this.status = PlayerStatus.valueOf(playerDto.getStatus());
         this.phaseCallSize = playerDto.getPhaseCallSize();
     }
