@@ -11,7 +11,7 @@ public class PlayerDto {
     private String playerName;
     private Long boardId;
     private int position;
-    private double bb;
+    private int money;
     private int card1;
     private int card2;
     private int status;
@@ -24,7 +24,7 @@ public class PlayerDto {
         this.playerName = player.getUser().getUsername();
         this.boardId = player.getBoard().getId();
         this.position = player.getPosition().ordinal();
-        this.bb = player.getBb();
+        this.money = player.getMoney();
         this.card1 = player.getCard1();
         this.card2 = player.getCard2();
         this.status = player.getStatus().ordinal();
