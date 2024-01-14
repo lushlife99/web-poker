@@ -245,6 +245,8 @@ public class BoardServiceV1 {
      * @param boardId
      * @return
      */
+
+    @Transactional
     public Board startGame(Long boardId) {
 
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
