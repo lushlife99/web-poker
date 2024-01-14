@@ -52,13 +52,12 @@ public class BoardController {
      * 지금은 컨트롤러의 동작으로 게임을 실행하지만,
      * 나중에 게임로직이 다 완성되면 게임이 끝났을 때 알아서 재시작하게 만들거임.
      * 그렇게 되면 이 컨트롤러도 삭제.
-     * @param boardDto
-     * @param request
+     * @param boardId
      * @return
      */
 
-//    @PostMapping("/startGame")
-//    public BoardDto startGame(@RequestBody BoardDto boardDto, HttpServletRequest request) {
-//        return boardServiceV1.startGame(boardDto);
-//    }
+    @PostMapping("/start/{boardId}")
+    public BoardDto startGame(@PathVariable Long boardId) {
+       return new BoardDto(boardServiceV1.startGame(boardId));
+    }
 }

@@ -13,11 +13,9 @@ import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.model.Board;
 import com.example.pokerv2.model.Player;
 import com.example.pokerv2.model.User;
-import com.example.pokerv2.repository.ActionRepository;
 import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.repository.PlayerRepository;
 import com.example.pokerv2.repository.UserRepository;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -36,7 +34,6 @@ public class BoardServiceV1 {
     private final UserRepository userRepository;
     private final PlayerRepository playerRepository;
     private final SimpMessagingTemplate simpMessagingTemplate;
-    private final ActionRepository actionRepository;
 
 
     /**
@@ -60,17 +57,16 @@ public class BoardServiceV1 {
 
         List<Board> playableBoard = boardRepository.findFirstPlayableBoard(user.getId(), PageRequest.of(0,1));
 
-
         if(playableBoard.size() != 0)
             board = playableBoard.get(0);
         else board = Board.builder().blind(1000).phaseStatus(PhaseStatus.WAITING).build();
         Player player = buyIn(board, user, requestBb);
         seatIn(board, player);
         board = boardRepository.save(board);
-        simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.PLAYER_JOIN.toString(), new BoardDto(board)));
-        if(board.getTotalPlayer() > 1 && board.getPhaseStatus().equals(PhaseStatus.WAITING)) {
-            board = startGame(board);
-        }
+        simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.PLAYER_JOIN.getDetail(), new BoardDto(board)));
+//        if(board.getTotalPlayer() > 1 && board.getPhaseStatus().equals(PhaseStatus.WAITING)) {
+//            board = startGame(board.getId());
+//        }
         return new BoardDto(board);
     }
 
@@ -110,32 +106,41 @@ public class BoardServiceV1 {
     @Transactional
     public void action(BoardDto boardDto, Long playerId, Principal principal) {
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-        List<PlayerDto> players = boardDto.getPlayers();
-        board.changeBoardStatus(boardDto);
-        int actionPos = board.getActionPos();
-        boolean isAllInPlayerExist = false;
-
+        Player player = playerRepository.findById(playerId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         if (!isSeatInBoard(board, playerId))
             throw new CustomException(ErrorCode.BAD_REQUEST);
 
         for (PlayerDto playerDto : boardDto.getPlayers()) {
-            Player player = playerRepository.findById(playerDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-            player.changePlayerStatus(playerDto);
+            Player p = playerRepository.findById(playerDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+            p.changePlayerStatus(playerDto);
+        }
+        List<PlayerDto> players = boardDto.getPlayers();
+        board.changeBoardStatus(boardDto);
+        int actionPos = board.getActionPos();
+        int actionPlayerIdx = 0;
+
+        boolean isAllInPlayerExist = false;
+
+        for (int i = 0; i < players.size(); i++) {
+            PlayerDto playerDto = players.get(i);
+            if(playerDto.getPosition() == actionPos){
+                actionPlayerIdx = i;
+            }
         }
 
-        saveAction(boardDto); // actionService -> migration
+        //saveAction(boardDto); // actionService -> migration
 
         for (int i = 1; i <= board.getTotalPlayer(); i++) {
-            PlayerDto nextActionCandidate = players.get((actionPos + i) % MAX_PLAYER);
+            PlayerDto nextActionCandidate = players.get((actionPlayerIdx + i) % board.getTotalPlayer());
             if (nextActionCandidate.getStatus() == PlayerStatus.PLAY.ordinal()) {
                 if (nextActionCandidate.getPosition() != board.getBettingPos()) {
-                    board.setActionPos((actionPos + i) % MAX_PLAYER);
-                    simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.NEXT_ACTION.toString(), new BoardDto(board)));
+                    board.setActionPos(nextActionCandidate.getPosition());
+                    simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.NEXT_ACTION.getDetail(), new BoardDto(board)));
                     return;
                 } else {
                     board = beforeNextPhase(boardDto);
                     nextPhase(board);
-                    simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.toString(), new BoardDto(board)));
+                    simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), new BoardDto(board)));
                     return;
                 }
             } else if (nextActionCandidate.getStatus() == PlayerStatus.ALL_IN.ordinal()){
@@ -152,7 +157,7 @@ public class BoardServiceV1 {
         if(isAllInPlayerExist){
             GameResultDto gameResultDto = showDown(board);
             takePot(board);
-            simpMessagingTemplate.convertAndSend("/topic/board/" + boardDto.getId(), new MessageDto(MessageType.GAME_RESULT.toString(), gameResultDto));
+            simpMessagingTemplate.convertAndSend("/topic/board/" + boardDto.getId(), new MessageDto(MessageType.GAME_RESULT.getDetail(), gameResultDto));
         } else {
             takePot(board);
         }
@@ -162,6 +167,8 @@ public class BoardServiceV1 {
 
 //        List<Long> handValues = HandCalculator.calculateValue(board);
 
+//        long[][] valueAndJokBoList = HandCalculator.calculateValue(board);
+//        valueAndJokBoList
 
         return null;
     }
@@ -246,11 +253,14 @@ public class BoardServiceV1 {
      * 각 포지션이 모두 차있다고 생각하지 말 것.
      * 예를들어서 btn 포지션에 무조건 사람이 앉아있는 것이 아님.
      *
-     * @param board
+     * @param boardId
      * @return
      */
-    public Board startGame(Board board) {
 
+    @Transactional
+    public Board startGame(Long boardId) {
+
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         setActionPos(board);
         board.setPhaseStatus(PhaseStatus.PRE_FLOP);
         dealCard(board);
@@ -259,7 +269,7 @@ public class BoardServiceV1 {
         }
 
         boardRepository.save(board);
-        simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.GAME_START.toString(), new BoardDto(board)));
+        simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.GAME_START.getDetail(), new BoardDto(board)));
         return board;
     }
 
@@ -274,11 +284,16 @@ public class BoardServiceV1 {
         }
 
         if(finalPlayerIdx != -1){
-            if(finalPlayerIdx == players.size() - 1)
-                board.setActionPos(players.get(0).getPosition().getPosNum());
+            if(finalPlayerIdx == players.size() - 1) {
+                int actPos = players.get(0).getPosition().getPosNum();
+                board.setActionPos(actPos);
+                board.setBettingPos(actPos);
+            }
 
             else {
-                board.setActionPos(players.get(finalPlayerIdx + 1).getPosition().getPosNum());
+                int actPos = players.get(finalPlayerIdx + 1).getPosition().getPosNum();
+                board.setActionPos(actPos);
+                board.setBettingPos(actPos);
             }
         }
     }

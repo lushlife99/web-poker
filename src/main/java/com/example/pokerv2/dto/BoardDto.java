@@ -2,12 +2,16 @@ package com.example.pokerv2.dto;
 
 import com.example.pokerv2.model.Board;
 import com.example.pokerv2.model.Player;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class BoardDto {
 
     private Long id;
