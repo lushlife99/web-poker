@@ -35,7 +35,6 @@ public class BoardServiceV1 {
     private final UserRepository userRepository;
     private final PlayerRepository playerRepository;
     private final SimpMessagingTemplate simpMessagingTemplate;
-    private final ActionRepository actionRepository;
 
 
     /**
