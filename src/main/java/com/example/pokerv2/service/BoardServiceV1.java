@@ -106,22 +106,32 @@ public class BoardServiceV1 {
     @Transactional
     public void action(BoardDto boardDto, Long playerId, Principal principal) {
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        Player player = playerRepository.findById(playerId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         if (!isSeatInBoard(board, playerId))
             throw new CustomException(ErrorCode.BAD_REQUEST);
 
         for (PlayerDto playerDto : boardDto.getPlayers()) {
-            Player player = playerRepository.findById(playerDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-            player.changePlayerStatus(playerDto);
+            Player p = playerRepository.findById(playerDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+            p.changePlayerStatus(playerDto);
         }
         List<PlayerDto> players = boardDto.getPlayers();
         board.changeBoardStatus(boardDto);
         int actionPos = board.getActionPos();
+        int actionPlayerIdx = 0;
+
         boolean isAllInPlayerExist = false;
 
-        saveAction(boardDto); // actionService -> migration
+        for (int i = 0; i < players.size(); i++) {
+            PlayerDto playerDto = players.get(i);
+            if(playerDto.getPosition() == actionPos){
+                actionPlayerIdx = i;
+            }
+        }
+
+        //saveAction(boardDto); // actionService -> migration
 
         for (int i = 1; i <= board.getTotalPlayer(); i++) {
-            PlayerDto nextActionCandidate = players.get((actionPos + i) % board.getTotalPlayer());
+            PlayerDto nextActionCandidate = players.get((actionPlayerIdx + i) % board.getTotalPlayer());
             if (nextActionCandidate.getStatus() == PlayerStatus.PLAY.ordinal()) {
                 if (nextActionCandidate.getPosition() != board.getBettingPos()) {
                     board.setActionPos(nextActionCandidate.getPosition());
