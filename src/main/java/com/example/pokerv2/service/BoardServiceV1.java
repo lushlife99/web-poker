@@ -125,7 +125,7 @@ public class BoardServiceV1 {
             PlayerDto nextActionCandidate = players.get((actionPos + i) % MAX_PLAYER);
             if (nextActionCandidate.getStatus() == PlayerStatus.PLAY.ordinal()) {
                 if (nextActionCandidate.getPosition() != board.getBettingPos()) {
-                    board.setActionPos((actionPos + i) % MAX_PLAYER);
+                    board.setActionPos(nextActionCandidate.getPosition());
                     simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.NEXT_ACTION.getDetail(), new BoardDto(board)));
                     return;
                 } else {
