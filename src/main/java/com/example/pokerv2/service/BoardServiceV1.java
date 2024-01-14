@@ -121,7 +121,7 @@ public class BoardServiceV1 {
         saveAction(boardDto); // actionService -> migration
 
         for (int i = 1; i <= board.getTotalPlayer(); i++) {
-            PlayerDto nextActionCandidate = players.get((actionPos + i) % MAX_PLAYER);
+            PlayerDto nextActionCandidate = players.get((actionPos + i) % board.getTotalPlayer());
             if (nextActionCandidate.getStatus() == PlayerStatus.PLAY.ordinal()) {
                 if (nextActionCandidate.getPosition() != board.getBettingPos()) {
                     board.setActionPos(nextActionCandidate.getPosition());
@@ -157,6 +157,8 @@ public class BoardServiceV1 {
 
 //        List<Long> handValues = HandCalculator.calculateValue(board);
 
+//        long[][] valueAndJokBoList = HandCalculator.calculateValue(board);
+//        valueAndJokBoList
 
         return null;
     }

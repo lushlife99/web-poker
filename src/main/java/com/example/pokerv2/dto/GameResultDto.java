@@ -25,5 +25,6 @@ public class GameResultDto {
      *
      */
 
+    private BoardDto boardDto;
 
 }
