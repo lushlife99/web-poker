@@ -248,13 +248,7 @@ public class BoardServiceV1 {
      */
     public Board startGame(Board board) {
 
-        int finalPlayerPos = getFinalPlayerPos(board).getPosNum();
-
-        for (Player player : board.getPlayers()) {
-            if(player.getPosition().getPosNum() == (++finalPlayerPos) % MAX_PLAYER){
-                board.setActionPos(player.getPosition().getPosNum());
-            }
-        }
+        setActionPos(board);
         board.setPhaseStatus(PhaseStatus.PRE_FLOP);
         dealCard(board);
         for (Player player : board.getPlayers()) {
@@ -264,6 +258,26 @@ public class BoardServiceV1 {
         boardRepository.save(board);
         simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.GAME_START.toString(), new BoardDto(board)));
         return board;
+    }
+
+    private void setActionPos(Board board) {
+        int finalPlayerPos = getFinalPlayerPos(board).getPosNum();
+        List<Player> players = board.getPlayers();
+        int finalPlayerIdx = -1;
+        for(int i = 0; i < board.getTotalPlayer(); i++){
+            if(players.get(0).getPosition().getPosNum() == finalPlayerPos){
+                finalPlayerIdx = i;
+            }
+        }
+
+        if(finalPlayerIdx != -1){
+            if(finalPlayerIdx == players.size() - 1)
+                board.setActionPos(players.get(0).getPosition().getPosNum());
+
+            else {
+                board.setActionPos(players.get(finalPlayerIdx + 1).getPosition().getPosNum());
+            }
+        }
     }
 
     public BoardDto get(Long boardId, Principal principal) {
