@@ -2,12 +2,16 @@ package com.example.pokerv2.dto;
 
 import com.example.pokerv2.model.Action;
 import com.example.pokerv2.model.HandHistory;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class HandHistoryDto {
 
     private Long id;
