@@ -18,12 +18,13 @@ public class InitProject {
 
     @EventListener(ApplicationReadyEvent.class)
     public void initData() {
-        log.info("Initial Data Init");
+
         try {
             userServiceV1.join(User.builder().userName("a1").password("1234").userId("a1").build());
             userServiceV1.join(User.builder().userName("a2").password("1234").userId("a2").build());
+            log.info("Initial Data Init");
         } catch (Exception e) {
-            log.error("Initial fail");
+            log.info("Initial fail. already exist user");
         }
     }
 }

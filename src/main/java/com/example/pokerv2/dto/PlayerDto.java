@@ -1,7 +1,11 @@
 package com.example.pokerv2.dto;
 
 import com.example.pokerv2.model.Player;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.Data;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 public class PlayerDto {
@@ -17,6 +21,7 @@ public class PlayerDto {
     private int status;
     private int totalCallSize;
     private int phaseCallSize;
+    private List<Integer> jokBo = new ArrayList<>();
 
     public PlayerDto(Player player) {
         this.id = player.getId();
