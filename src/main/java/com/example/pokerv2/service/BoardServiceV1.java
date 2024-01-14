@@ -108,11 +108,6 @@ public class BoardServiceV1 {
     @Transactional
     public void action(BoardDto boardDto, Long playerId, Principal principal) {
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-        List<PlayerDto> players = boardDto.getPlayers();
-        board.changeBoardStatus(boardDto);
-        int actionPos = board.getActionPos();
-        boolean isAllInPlayerExist = false;
-
         if (!isSeatInBoard(board, playerId))
             throw new CustomException(ErrorCode.BAD_REQUEST);
 
@@ -120,6 +115,13 @@ public class BoardServiceV1 {
             Player player = playerRepository.findById(playerDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
             player.changePlayerStatus(playerDto);
         }
+        List<PlayerDto> players = boardDto.getPlayers();
+        board.changeBoardStatus(boardDto);
+        int actionPos = board.getActionPos();
+        boolean isAllInPlayerExist = false;
+
+
+
 
         saveAction(boardDto); // actionService -> migration
 
@@ -272,7 +274,7 @@ public class BoardServiceV1 {
         }
 
         if(finalPlayerIdx != -1){
-            if(finalPlayerIdx == players.size() - 1)
+            if(finalPlayerIdx == Position.BB.getPosNum())
                 board.setActionPos(players.get(0).getPosition().getPosNum());
 
             else {
