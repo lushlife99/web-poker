@@ -1,9 +1,6 @@
 package com.example.pokerv2.controller;
 
 import com.example.pokerv2.dto.BoardDto;
-import com.example.pokerv2.error.CustomException;
-import com.example.pokerv2.error.ErrorCode;
-import com.example.pokerv2.model.Board;
 import com.example.pokerv2.service.BoardServiceV1;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.ModelAndView;
 
 import java.security.Principal;
 
@@ -43,6 +39,11 @@ public class BoardController {
     @PostMapping("/test")
     public ResponseEntity httpTest(HttpServletRequest request){
         return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @GetMapping("/{boardId}")
+    public BoardDto get(@PathVariable Long boardId, Principal principal) {
+        return boardServiceV1.get(boardId, principal);
     }
 
     /**

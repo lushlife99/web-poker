@@ -249,6 +249,11 @@ public class BoardServiceV1 {
 
         int finalPlayerPos = getFinalPlayerPos(board).getPosNum();
 
+        for (Player player : board.getPlayers()) {
+            if(player.getPosition().getPosNum() == (++finalPlayerPos) % MAX_PLAYER){
+                board.setActionPos(player.getPosition().getPosNum());
+            }
+        }
         board.setActionPos((finalPlayerPos + 1) % MAX_PLAYER);
         board.setPhaseStatus(PhaseStatus.PRE_FLOP);
         dealCard(board);
@@ -259,6 +264,24 @@ public class BoardServiceV1 {
         boardRepository.save(board);
         simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.GAME_START.toString(), new BoardDto(board)));
         return board;
+    }
+
+    public BoardDto get(Long boardId, Principal principal) {
+        User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        boolean isAuthenticated = false;
+        for (Player p : board.getPlayers()) {
+            if(p.getUser().equals(user)) {
+                isAuthenticated = true;
+                break;
+            }
+
+        }
+
+        if(isAuthenticated)
+            return new BoardDto(board);
+
+        return null;
     }
 
     /**
