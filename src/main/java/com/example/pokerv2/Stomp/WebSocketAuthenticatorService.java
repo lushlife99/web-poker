@@ -25,7 +25,6 @@ public class WebSocketAuthenticatorService {
         if(password == null){
             throw new AuthenticationCredentialsNotFoundException("password is null");
         }
-
         Optional<User> user = userRepository.findByUserId(username);
 
         return new UsernamePasswordAuthenticationToken(username, null, user.get().getAuthorities());
