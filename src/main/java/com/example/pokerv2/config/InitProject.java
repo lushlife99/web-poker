@@ -24,7 +24,6 @@ public class InitProject {
             userServiceV1.join(User.builder().userName("a2").password("1234").userId("a2").build());
             log.info("Initial Data Init");
         } catch (Exception e) {
-            log.info("Initial fail. already exist user");
         }
     }
 }

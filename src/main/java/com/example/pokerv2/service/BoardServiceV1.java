@@ -120,9 +120,6 @@ public class BoardServiceV1 {
         int actionPos = board.getActionPos();
         boolean isAllInPlayerExist = false;
 
-
-
-
         saveAction(boardDto); // actionService -> migration
 
         for (int i = 1; i <= board.getTotalPlayer(); i++) {
@@ -274,11 +271,16 @@ public class BoardServiceV1 {
         }
 
         if(finalPlayerIdx != -1){
-            if(finalPlayerIdx == Position.BB.getPosNum())
-                board.setActionPos(players.get(0).getPosition().getPosNum());
+            if(finalPlayerIdx == players.size() - 1) {
+                int actPos = players.get(0).getPosition().getPosNum();
+                board.setActionPos(actPos);
+                board.setBettingPos(actPos);
+            }
 
             else {
-                board.setActionPos(players.get(finalPlayerIdx + 1).getPosition().getPosNum());
+                int actPos = players.get(finalPlayerIdx + 1).getPosition().getPosNum();
+                board.setActionPos(actPos);
+                board.setBettingPos(actPos);
             }
         }
     }
