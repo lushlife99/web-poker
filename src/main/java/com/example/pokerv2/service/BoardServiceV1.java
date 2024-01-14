@@ -13,7 +13,6 @@ import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.model.Board;
 import com.example.pokerv2.model.Player;
 import com.example.pokerv2.model.User;
-import com.example.pokerv2.repository.ActionRepository;
 import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.repository.PlayerRepository;
 import com.example.pokerv2.repository.UserRepository;

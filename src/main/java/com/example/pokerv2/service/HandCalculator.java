@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 public class HandCalculator {
 
     /**
+     * 24/01/15 chan
+     *
      * 카드가 저장된 방법.
      * 13으로 나눈 나머지 : 카드의 숫자
      * 13으로 나눈 몫 : 카드의 모양
@@ -23,14 +25,15 @@ public class HandCalculator {
      * 카드의 숫자 -> 2-10: 0-8, J: 9, Q: 10, K: 11, A: 12
      * 카드의 모양 -> 0 : 스페이드, 1 : 다이아, 2 : 하트, 3 : 클로버
      *
+     * 함수가 너무 긺. 나중에 리팩토링 하기.
      * @param board
      * @return 각 플레이어들의 족보의 세기를 담은 리스트
      */
 
-    public static int[][] calculateValue(Board board) {
-        int[][] valueAndJokBo = new int[board.getTotalPlayer()][];
-        for (int[] ints : valueAndJokBo) {
-            ints = new int[6];
+    public static long[][] calculateValue(Board board) {
+        long[][] valueAndJokBo = new long[board.getTotalPlayer()][];
+        for (long[] longs : valueAndJokBo) {
+            longs = new long[6];
         }
         List<Integer> cards = new ArrayList<>();
         cards.add(board.getCommunityCard1());
@@ -108,12 +111,20 @@ public class HandCalculator {
             }
             cards.remove(5);
             cards.remove(6);
+            valueAndJokBo[cnt][0] = handValueList.get(cnt);
+            valueAndJokBo[cnt][1] = jokBoList.get(0);
+            valueAndJokBo[cnt][2] = jokBoList.get(2);
+            valueAndJokBo[cnt][3] = jokBoList.get(3);
+            valueAndJokBo[cnt][4] = jokBoList.get(4);
+            valueAndJokBo[cnt][5] = jokBoList.get(5);
+            cnt++;
+
             for (Integer integer : jokBoList) {
-                //valueAndJokBo[cnt++][]
+                valueAndJokBo[cnt][1] = handValueList.get(cnt);
             }
         }
 
-        return null;
+        return valueAndJokBo;
     }
 
 

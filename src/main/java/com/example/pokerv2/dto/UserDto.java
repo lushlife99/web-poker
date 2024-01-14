@@ -1,15 +1,9 @@
 package com.example.pokerv2.dto;
 
-import com.example.pokerv2.model.Hud;
-import com.example.pokerv2.model.Player;
 import com.example.pokerv2.model.User;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
