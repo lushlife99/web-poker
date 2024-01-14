@@ -65,9 +65,9 @@ public class BoardServiceV1 {
         seatIn(board, player);
         board = boardRepository.save(board);
         simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.PLAYER_JOIN.getDetail(), new BoardDto(board)));
-        if(board.getTotalPlayer() > 1 && board.getPhaseStatus().equals(PhaseStatus.WAITING)) {
-            board = startGame(board.getId());
-        }
+//        if(board.getTotalPlayer() > 1 && board.getPhaseStatus().equals(PhaseStatus.WAITING)) {
+//            board = startGame(board.getId());
+//        }
         return new BoardDto(board);
     }
 
