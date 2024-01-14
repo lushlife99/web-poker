@@ -17,7 +17,6 @@ import com.example.pokerv2.repository.ActionRepository;
 import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.repository.PlayerRepository;
 import com.example.pokerv2.repository.UserRepository;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -67,7 +66,7 @@ public class BoardServiceV1 {
         Player player = buyIn(board, user, requestBb);
         seatIn(board, player);
         board = boardRepository.save(board);
-        simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.PLAYER_JOIN.toString(), new BoardDto(board)));
+        simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.PLAYER_JOIN.getDetail(), new BoardDto(board)));
         if(board.getTotalPlayer() > 1 && board.getPhaseStatus().equals(PhaseStatus.WAITING)) {
             board = startGame(board);
         }
@@ -130,12 +129,12 @@ public class BoardServiceV1 {
             if (nextActionCandidate.getStatus() == PlayerStatus.PLAY.ordinal()) {
                 if (nextActionCandidate.getPosition() != board.getBettingPos()) {
                     board.setActionPos((actionPos + i) % MAX_PLAYER);
-                    simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.NEXT_ACTION.toString(), new BoardDto(board)));
+                    simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.NEXT_ACTION.getDetail(), new BoardDto(board)));
                     return;
                 } else {
                     board = beforeNextPhase(boardDto);
                     nextPhase(board);
-                    simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.toString(), new BoardDto(board)));
+                    simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), new BoardDto(board)));
                     return;
                 }
             } else if (nextActionCandidate.getStatus() == PlayerStatus.ALL_IN.ordinal()){
@@ -152,7 +151,7 @@ public class BoardServiceV1 {
         if(isAllInPlayerExist){
             GameResultDto gameResultDto = showDown(board);
             takePot(board);
-            simpMessagingTemplate.convertAndSend("/topic/board/" + boardDto.getId(), new MessageDto(MessageType.GAME_RESULT.toString(), gameResultDto));
+            simpMessagingTemplate.convertAndSend("/topic/board/" + boardDto.getId(), new MessageDto(MessageType.GAME_RESULT.getDetail(), gameResultDto));
         } else {
             takePot(board);
         }
@@ -259,7 +258,7 @@ public class BoardServiceV1 {
         }
 
         boardRepository.save(board);
-        simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.GAME_START.toString(), new BoardDto(board)));
+        simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.GAME_START.getDetail(), new BoardDto(board)));
         return board;
     }
 

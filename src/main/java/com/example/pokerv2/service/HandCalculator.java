@@ -109,7 +109,7 @@ public class HandCalculator {
             cards.remove(5);
             cards.remove(6);
             for (Integer integer : jokBoList) {
-                valueAndJokBo[cnt++][]
+                //valueAndJokBo[cnt++][]
             }
         }
 
