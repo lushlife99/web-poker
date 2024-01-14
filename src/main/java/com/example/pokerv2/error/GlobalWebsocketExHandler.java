@@ -9,11 +9,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Component;
 
 import java.security.Principal;
 
 @Slf4j
 @RequiredArgsConstructor
+@Component
 public class GlobalWebsocketExHandler {
 
     private final SimpMessagingTemplate simpMessagingTemplate;
