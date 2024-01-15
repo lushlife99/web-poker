@@ -27,7 +27,7 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
-public class BoardServiceV1 {
+public class    BoardServiceV1 {
 
     private static final int MAX_PLAYER = 6;
     private final BoardRepository boardRepository;
@@ -61,7 +61,7 @@ public class BoardServiceV1 {
             board = playableBoard.get(0);
         else board = Board.builder().blind(1000).phaseStatus(PhaseStatus.WAITING).build();
         Player player = buyIn(board, user, requestBb);
-        seatIn(board, player);
+        sitIn(board, player);
         board = boardRepository.save(board);
         simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.PLAYER_JOIN.getDetail(), new BoardDto(board)));
 //        if(board.getTotalPlayer() > 1 && board.getPhaseStatus().equals(PhaseStatus.WAITING)) {
@@ -348,7 +348,7 @@ public class BoardServiceV1 {
         } else return Position.BB;
     }
     @Transactional
-    public void seatIn(Board board, Player joinPlayer) {
+    public void sitIn(Board board, Player joinPlayer) {
         List<Player> players = board.getPlayers();
 
         boolean[] isExistSeat = new boolean[MAX_PLAYER];
@@ -370,6 +370,28 @@ public class BoardServiceV1 {
                 break;
             }
         }
+    }
+
+    public BoardDto sitOut(BoardDto boardDto, Principal principal) {
+        User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        List<Player> players = board.getPlayers();
+
+        for (Player player : players) {
+            if(player.getUser().equals(user)){
+                Player exitPlayer = playerRepository.findById(player.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+                user.setMoney(user.getMoney() + exitPlayer.getMoney());
+                if(board.getPhaseStatus() != PhaseStatus.WAITING && player.getPhaseCallSize() != 0){
+                    board.setPot(board.getPot() + player.getPhaseCallSize());
+                }
+                playerRepository.delete(exitPlayer);
+                board.setTotalPlayer(board.getTotalPlayer() - 1);
+            }
+        }
+        boardRepository.save(board);
+
+        simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.PLAYER_EXIT.getDetail(), new BoardDto(board)));
+        return new BoardDto(board);
     }
 
     private boolean isSeatInBoard(Board board, Long playerId){

@@ -46,6 +46,12 @@ public class BoardController {
         return boardServiceV1.get(boardId, principal);
     }
 
+    @DeleteMapping("/exit")
+    public BoardDto exitGame(@RequestBody BoardDto boardDto, Principal principal) {
+        return boardServiceV1.sitOut(boardDto, principal);
+    }
+
+
     /**
      * startGame
      *
