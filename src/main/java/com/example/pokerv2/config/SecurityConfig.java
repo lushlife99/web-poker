@@ -48,7 +48,6 @@ public class SecurityConfig  {
                                         httpServletResponse.setHeader(SUBSCRIBE_HEADER, user.get().getId().toString());
                                     }
                                 })
-
                 )
                 .userDetailsService(userAuthenticationService);
 

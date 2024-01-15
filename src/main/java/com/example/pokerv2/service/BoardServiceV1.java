@@ -278,8 +278,9 @@ public class BoardServiceV1 {
         List<Player> players = board.getPlayers();
         int finalPlayerIdx = -1;
         for(int i = 0; i < board.getTotalPlayer(); i++){
-            if(players.get(0).getPosition().getPosNum() == finalPlayerPos){
+            if(players.get(i).getPosition().getPosNum() == finalPlayerPos){
                 finalPlayerIdx = i;
+                break;
             }
         }
 
@@ -329,19 +330,22 @@ public class BoardServiceV1 {
 
         List<Player> players = board.getPlayers();
         Position finalActPos = null;
+        boolean isSBExist = false;
         for (Player player : players) {
             if(player.getPosition().equals(Position.BTN)) {
                 return Position.BTN;
             } else if (player.getPosition().getPosNum() < Position.BTN.getPosNum()) {
                 finalActPos = player.getPosition();
+            } else if (player.getPosition().getPosNum() == Position.SB.getPosNum()){
+                isSBExist = true;
             }
         }
 
         if(finalActPos != null) {
             return finalActPos;
-        } else {
-            return Position.BB;
-        }
+        } else if(isSBExist){
+            return Position.SB;
+        } else return Position.BB;
     }
     @Transactional
     public void seatIn(Board board, Player joinPlayer) {
