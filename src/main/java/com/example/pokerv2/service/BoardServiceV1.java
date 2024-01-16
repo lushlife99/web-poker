@@ -99,15 +99,13 @@ public class    BoardServiceV1 {
      *
      *
      * @param boardDto
-     * @param playerId
      * @param principal
      */
 
     @Transactional
-    public void action(BoardDto boardDto, Long playerId, Principal principal) {
+    public void action(BoardDto boardDto, Principal principal) {
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-        Player player = playerRepository.findById(playerId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-        if (!isSeatInBoard(board, playerId))
+        if (!isSeatInBoard(board, principal.getName()))
             throw new CustomException(ErrorCode.BAD_REQUEST);
 
         for (PlayerDto playerDto : boardDto.getPlayers()) {
@@ -261,6 +259,7 @@ public class    BoardServiceV1 {
     public Board startGame(Long boardId) {
 
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        takeAnte(board);
         setActionPos(board);
         board.setPhaseStatus(PhaseStatus.PRE_FLOP);
         dealCard(board);
@@ -271,6 +270,51 @@ public class    BoardServiceV1 {
         boardRepository.save(board);
         simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.GAME_START.getDetail(), new BoardDto(board)));
         return board;
+    }
+
+
+    public void takeAnte(Board board) {
+        Position finalPlayerPos = getFinalPlayerPos(board);
+        List<Player> players = board.getPlayers();
+        int finalPlayerIdx = -1;
+
+        for(int i = 0; i < players.size(); i++) {
+            Player player = players.get(i);
+            if(player.getPosition().equals(finalPlayerPos)){
+                finalPlayerIdx = i;
+                break;
+            }
+        }
+
+        if(finalPlayerIdx != -1){
+            if(board.getTotalPlayer() != 2) {
+                Player player = players.get((finalPlayerIdx + 1) % players.size());
+                if(player.getMoney() > board.getBlind()) {
+                    player.setMoney((int) (player.getMoney() - board.getBlind() * 0.5));
+                    player.setPhaseCallSize((int) (board.getBlind() * 0.5));
+                } else throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
+
+                player = players.get((finalPlayerIdx + 2) % players.size());
+                if(player.getMoney() > board.getBlind()) {
+                    player.setMoney(player.getMoney() - board.getBlind());
+                    player.setPhaseCallSize(board.getBlind());
+                } else throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
+
+            } else {
+                Player player = players.get(finalPlayerIdx);
+                if(player.getMoney() > board.getBlind()) {
+                    player.setMoney((int) (player.getMoney() - board.getBlind() * 0.5));
+                    player.setPhaseCallSize((int) (board.getBlind() * 0.5));
+                } else throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
+
+                player = players.get((finalPlayerIdx + 1) % players.size());
+                if(player.getMoney() > board.getBlind()) {
+                    player.setMoney(player.getMoney() - board.getBlind());
+                    player.setPhaseCallSize(board.getBlind());
+                } else throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
+            }
+        } else throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+
     }
 
     private void setActionPos(Board board) {
@@ -394,9 +438,9 @@ public class    BoardServiceV1 {
         return new BoardDto(board);
     }
 
-    private boolean isSeatInBoard(Board board, Long playerId){
+    private boolean isSeatInBoard(Board board, String userId){
         for (Player player : board.getPlayers()) {
-            if(player.getId().equals(playerId))
+            if(player.getUser().getUserId().equals(userId))
                 return true;
         }
         return false;
