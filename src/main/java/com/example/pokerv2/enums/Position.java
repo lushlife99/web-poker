@@ -1,5 +1,10 @@
 package com.example.pokerv2.enums;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
 public enum Position {
 
     UTG,
@@ -7,5 +12,5 @@ public enum Position {
     CO,
     BTN,
     SB,
-    BB,
+    BB;
 }

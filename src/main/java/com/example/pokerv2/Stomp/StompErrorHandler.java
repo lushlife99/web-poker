@@ -36,7 +36,7 @@ public class StompErrorHandler extends StompSubProtocolErrorHandler{
     private Message<byte[]> errorMessage(String errorMessage){
 
         StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.ERROR);
-        accessor.setLeaveMutable(true);
+        accessor.setLeaveMutable(true); // 메시지의 헤더를 변경 가능하게 설정
 
         return MessageBuilder.createMessage(errorMessage.getBytes(StandardCharsets.UTF_8),
                 accessor.getMessageHeaders());

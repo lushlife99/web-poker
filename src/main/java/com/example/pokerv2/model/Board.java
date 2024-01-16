@@ -1,5 +1,6 @@
 package com.example.pokerv2.model;
 
+import com.example.pokerv2.enums.PhaseStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -56,7 +57,7 @@ public class Board {
     private int pot;
     private int bettingPos;
     private int actionPos;
-    private int phaseNum;
+    private PhaseStatus phaseStatus;
     private int bettingSize;
 
     private int communityCard1;

@@ -27,6 +27,7 @@ public class WebSocketAuthenticatorService {
         }
         Optional<User> user = userRepository.findByUserId(username);
 
+
         return new UsernamePasswordAuthenticationToken(username, null, user.get().getAuthorities());
         // 인증된 사용자에게 토큰을 생성하려면 principal, credentials, authorities 3가지 리턴
     }
