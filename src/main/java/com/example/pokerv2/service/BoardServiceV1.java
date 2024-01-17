@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -128,6 +129,7 @@ public class BoardServiceV1 {
 
             Player nextActionCandidate = players.get((actionPlayerIdx + i) % board.getTotalPlayer());
             if (nextActionCandidate.getStatus().equals(PlayerStatus.PLAY)) {
+                board.setLastActionTime(LocalDateTime.now());
                 if (nextActionCandidate.getPosition().getPosNum() != board.getBettingPos()) {
                     board.setActionPos(nextActionCandidate.getPosition().getPosNum());
                     simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_ACTION.getDetail(), new BoardDto(board)));
@@ -198,7 +200,8 @@ public class BoardServiceV1 {
             board.setPot(board.getPot() + player.getPhaseCallSize());
             player.setPhaseCallSize(0);
         }
-        board.setActionPos((board.getBtn() + 1) % board.getTotalPlayer());
+        int btnPlayerIdx = getBtnPlayerIdx(board);
+        board.setActionPos(players.get((btnPlayerIdx + 1) % players.size()).getPosition().getPosNum());
         return boardRepository.save(board);
     }
 
@@ -259,7 +262,7 @@ public class BoardServiceV1 {
         for (Player player : board.getPlayers()) {
             player.setStatus(PlayerStatus.PLAY);
         }
-
+        board.setLastActionTime(LocalDateTime.now());
         boardRepository.save(board);
         simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.GAME_START.getDetail(), new BoardDto(board)));
         return board;
