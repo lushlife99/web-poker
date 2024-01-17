@@ -400,10 +400,11 @@ public class BoardServiceV1 {
                 if (board.getPhaseStatus() != PhaseStatus.WAITING && player.getPhaseCallSize() != 0) {
                     board.setPot(board.getPot() + player.getPhaseCallSize());
                 }
+
                 players.remove(exitPlayer);
                 board.setPlayers(players);
-                boardRepository.save(board);
                 board.setTotalPlayer(board.getTotalPlayer() - 1);
+                playerRepository.delete(exitPlayer);
                 simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.PLAYER_EXIT.getDetail(), new BoardDto(board)));
                 break;
             }
