@@ -33,9 +33,8 @@ public class BoardController {
     }
 
     @PutMapping("/exit")
-    public BoardDto exitGame(@RequestBody BoardDto board, Principal principal, HttpServletRequest request) {
+    public BoardDto exitGame(@RequestBody BoardDto board, Principal principal) {
 
-        System.out.println("board = " + board);
         return boardServiceV1.sitOut(board, principal);
     }
 
