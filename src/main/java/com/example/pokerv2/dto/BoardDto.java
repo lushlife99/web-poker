@@ -18,7 +18,7 @@ public class BoardDto {
     private Long id;
     private int totalPlayer;
     private int blind;
-    private int btn = Position.BTN.getPosNum();
+    private int btn;
     private int pot;
     private int bettingPos;
     private int actionPos;

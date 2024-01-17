@@ -21,8 +21,7 @@ public class Board {
 
     @Id @GeneratedValue
     private Long id;
-    @Builder.Default
-    private int btn = Position.BTN.getPosNum();
+    private int btn;
     private int totalPlayer;
     private int blind;
     private int pot;

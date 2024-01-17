@@ -44,7 +44,6 @@ public class BoardServiceV1 {
      * 1. 플레이 가능한 보드를 찾는다. 없다면 만든다.
      * 2. money를 bb로 환전한다.
      * 3. Player를 만들어서 입장시킨다.
-
      */
 
     @Transactional
@@ -161,10 +160,8 @@ public class BoardServiceV1 {
 
     public GameResultDto showDown(Board board) {
 
-//        List<Long> handValues = HandCalculator.calculateValue(board);
+        long[][] valueAndJokBoList = HandCalculator.calculateValue(board);
 
-//        long[][] valueAndJokBoList = HandCalculator.calculateValue(board);
-//        valueAndJokBoList
 
         return null;
     }
@@ -187,7 +184,6 @@ public class BoardServiceV1 {
         }
 
     }
-
 
 
     /**
@@ -242,7 +238,7 @@ public class BoardServiceV1 {
      * 첫번째 베팅 순서를 어떻게 정할까?
      * 1. 프리플랍 : BB 다음 포지션
      * 2. 프리플랍 이후 : btn 다음 포지션
-     *
+     * <p>
      * 주의 해야 할 것.
      * 각 포지션이 모두 차있다고 생각하지 말 것.
      * 예를들어서 btn 포지션에 무조건 사람이 앉아있는 것이 아님.
@@ -255,9 +251,10 @@ public class BoardServiceV1 {
     public Board startGame(Long boardId) {
 
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        setBtnExistPlayer(board);
+        setFirstActionPos(board);
         takeAnte(board);
         board.setPhaseStatus(PhaseStatus.PRE_FLOP);
-        setFirstActionPos(board);
         dealCard(board);
         for (Player player : board.getPlayers()) {
             player.setStatus(PlayerStatus.PLAY);
@@ -269,31 +266,52 @@ public class BoardServiceV1 {
     }
 
 
-    public void takeAnte(Board board) {
+    public void setBtnExistPlayer(Board board) {
         List<Player> players = board.getPlayers();
 
-        if (board.getBtn() != -1) {
+        int nextBtn = (board.getBtn() + 1) % MAX_PLAYER;
+
+        while (true) {
+            boolean isExist = false;
+            for (int i = 0; i < board.getTotalPlayer(); i++) {
+                Player player = players.get(i);
+                if (player.getPosition().getPosNum() == nextBtn) {
+                    board.setBtn(nextBtn);
+                    isExist = true;
+                }
+            }
+            if (isExist) {
+                break;
+            }
+            nextBtn = (nextBtn + 1) % MAX_PLAYER;
+        }
+    }
+
+    public void takeAnte(Board board) {
+        List<Player> players = board.getPlayers();
+        int btnPlayerIdx = getBtnPlayerIdx(board);
+        if (btnPlayerIdx != -1) {
             if (board.getTotalPlayer() != 2) {
-                Player player = players.get((board.getBtn() + 1) % players.size());
+                Player player = players.get((btnPlayerIdx + 1) % players.size());
                 if (player.getMoney() > board.getBlind()) {
                     player.setMoney((int) (player.getMoney() - board.getBlind() * 0.5));
                     player.setPhaseCallSize((int) (board.getBlind() * 0.5));
                 } else throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
 
-                player = players.get((board.getBtn() + 2) % players.size());
+                player = players.get((btnPlayerIdx + 2) % players.size());
                 if (player.getMoney() > board.getBlind()) {
                     player.setMoney(player.getMoney() - board.getBlind());
                     player.setPhaseCallSize(board.getBlind());
                 } else throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
 
             } else {
-                Player player = players.get(board.getBtn());
+                Player player = players.get(btnPlayerIdx);
                 if (player.getMoney() > board.getBlind()) {
                     player.setMoney((int) (player.getMoney() - board.getBlind() * 0.5));
                     player.setPhaseCallSize((int) (board.getBlind() * 0.5));
                 } else throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
 
-                player = players.get((board.getBtn() + 1) % players.size());
+                player = players.get((btnPlayerIdx + 1) % players.size());
                 if (player.getMoney() > board.getBlind()) {
                     player.setMoney(player.getMoney() - board.getBlind());
                     player.setPhaseCallSize(board.getBlind());
@@ -303,18 +321,25 @@ public class BoardServiceV1 {
 
     }
 
-    private void setFirstActionPos(Board board) {
+    private int getBtnPlayerIdx(Board board) {
         List<Player> players = board.getPlayers();
 
-        if (board.getBtn() == players.size() - 1) {
-            int actPos = players.get(0).getPosition().getPosNum();
-            board.setActionPos(actPos);
-            board.setBettingPos(actPos);
-        } else {
-            int actPos = players.get(board.getBtn() + 1).getPosition().getPosNum();
-            board.setActionPos(actPos);
-            board.setBettingPos(actPos);
+        for (int i = 0; i < board.getTotalPlayer(); i++) {
+            Player player = players.get(i);
+            if (player.getPosition().getPosNum() == board.getBtn())
+                return i;
         }
+
+        return -1;
+    }
+
+    private void setFirstActionPos(Board board) {
+        List<Player> players = board.getPlayers();
+        int btnPlayerIdx = getBtnPlayerIdx(board);
+        int actPos = players.get( (btnPlayerIdx + 1) % players.size()).getPosition().getPosNum();
+        board.setActionPos(actPos);
+        board.setBettingPos(actPos);
+
     }
 
     public BoardDto get(Long boardId, Principal principal) {
@@ -335,11 +360,6 @@ public class BoardServiceV1 {
         return null;
     }
 
-    /**
-     * getFinalPlayerPos
-     *
-     * @param board
-     */
 
     @Transactional
     public void sitIn(Board board, Player joinPlayer) {
@@ -347,13 +367,6 @@ public class BoardServiceV1 {
         boolean[] isExistSeat = new boolean[MAX_PLAYER];
         Random random = new Random();
         int pos = random.nextInt(MAX_PLAYER);
-
-        if(board.getTotalPlayer() == 0) {
-            joinPlayer.setPosition(Position.BTN);
-            players.add(joinPlayer);
-            board.setTotalPlayer(board.getTotalPlayer() + 1);
-            return;
-        }
 
         for (Player player : players) {
             isExistSeat[player.getPosition().ordinal()] = true;

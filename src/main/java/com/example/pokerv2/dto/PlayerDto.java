@@ -25,7 +25,7 @@ public class PlayerDto {
     private int status;
     private int totalCallSize;
     private int phaseCallSize;
-    private List<Integer> jokBo = new ArrayList<>();
+    private GameResultDto gameResult;
 
     public PlayerDto(Player player) {
         this.id = player.getId();
@@ -39,7 +39,6 @@ public class PlayerDto {
         this.status = player.getStatus().ordinal();
         this.totalCallSize = player.getTotalCallSize();
         this.phaseCallSize = player.getPhaseCallSize();
-
     }
 
 }
