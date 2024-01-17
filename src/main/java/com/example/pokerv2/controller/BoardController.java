@@ -1,16 +1,10 @@
 package com.example.pokerv2.controller;
 
 import com.example.pokerv2.dto.BoardDto;
-import com.example.pokerv2.model.Board;
-import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.service.BoardServiceV1;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -21,8 +15,6 @@ import java.security.Principal;
 public class BoardController {
 
     private final BoardServiceV1 boardServiceV1;
-    private final BoardRepository boardRepository;
-    private static final String PlayerId = "PlayerId";
 
     @PostMapping("/joinGame")
     public BoardDto joinGame(@RequestParam int bb, Principal principal) {
@@ -40,9 +32,11 @@ public class BoardController {
         return boardServiceV1.get(boardId, principal);
     }
 
-    @DeleteMapping("/exit")
-    public BoardDto exitGame(@RequestBody BoardDto boardDto, Principal principal) {
-        return boardServiceV1.sitOut(boardDto, principal);
+    @PutMapping("/exit")
+    public BoardDto exitGame(@RequestBody BoardDto board, Principal principal, HttpServletRequest request) {
+
+        System.out.println("board = " + board);
+        return boardServiceV1.sitOut(board, principal);
     }
 
     /**

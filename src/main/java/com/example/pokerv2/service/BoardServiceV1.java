@@ -416,25 +416,26 @@ public class    BoardServiceV1 {
         }
     }
 
+    @Transactional
     public BoardDto sitOut(BoardDto boardDto, Principal principal) {
         User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
-
+        Player exitPlayer;
         for (Player player : players) {
             if(player.getUser().equals(user)){
-                Player exitPlayer = playerRepository.findById(player.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+                exitPlayer = playerRepository.findById(player.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
                 user.setMoney(user.getMoney() + exitPlayer.getMoney());
                 if(board.getPhaseStatus() != PhaseStatus.WAITING && player.getPhaseCallSize() != 0){
                     board.setPot(board.getPot() + player.getPhaseCallSize());
                 }
-                playerRepository.delete(exitPlayer);
+                players.remove(exitPlayer);
+                board.setPlayers(players);
+                boardRepository.save(board);
                 board.setTotalPlayer(board.getTotalPlayer() - 1);
+                simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.PLAYER_EXIT.getDetail(), new BoardDto(board)));
             }
         }
-        boardRepository.save(board);
-
-        simpMessagingTemplate.convertAndSend("/topic/board/" + board.getId(), new MessageDto(MessageType.PLAYER_EXIT.getDetail(), new BoardDto(board)));
         return new BoardDto(board);
     }
 
