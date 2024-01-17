@@ -402,6 +402,7 @@ public class BoardServiceV1 {
                 boardRepository.save(board);
                 board.setTotalPlayer(board.getTotalPlayer() - 1);
                 simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.PLAYER_EXIT.getDetail(), new BoardDto(board)));
+                break;
             }
         }
         return new BoardDto(board);
