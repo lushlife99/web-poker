@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +19,7 @@ public class BoardDto {
     private Long id;
     private int totalPlayer;
     private int blind;
-    private int btn = Position.BTN.getPosNum();
+    private int btn;
     private int pot;
     private int bettingPos;
     private int actionPos;
@@ -29,6 +30,7 @@ public class BoardDto {
     private int communityCard3;
     private int communityCard4;
     private int communityCard5;
+    private LocalDateTime lastActionTime;
 
     private List<PlayerDto> players;
 
@@ -52,6 +54,7 @@ public class BoardDto {
         for (Player player : pList) {
             pDtoList.add(new PlayerDto(player));
         }
+        this.lastActionTime = board.getLastActionTime();
         this.players = pDtoList;
     }
 }

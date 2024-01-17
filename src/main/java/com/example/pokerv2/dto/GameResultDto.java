@@ -25,6 +25,9 @@ public class GameResultDto {
      *
      */
 
-    private BoardDto boardDto;
+    private boolean isWinner;
+    private int earnedMoney;
+    private long handValue;
+    private int[] jokBo;
 
 }

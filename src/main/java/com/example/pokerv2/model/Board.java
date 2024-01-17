@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,8 +22,7 @@ public class Board {
 
     @Id @GeneratedValue
     private Long id;
-    @Builder.Default
-    private int btn = Position.BTN.getPosNum();
+    private int btn;
     private int totalPlayer;
     private int blind;
     private int pot;
@@ -39,6 +39,7 @@ public class Board {
     private int communityCard3;
     private int communityCard4;
     private int communityCard5;
+    private LocalDateTime lastActionTime;
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL)
     @OrderBy("position asc")
