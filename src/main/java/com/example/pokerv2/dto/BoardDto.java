@@ -1,5 +1,6 @@
 package com.example.pokerv2.dto;
 
+import com.example.pokerv2.enums.Position;
 import com.example.pokerv2.model.Board;
 import com.example.pokerv2.model.Player;
 import lombok.AllArgsConstructor;
@@ -17,6 +18,7 @@ public class BoardDto {
     private Long id;
     private int totalPlayer;
     private int blind;
+    private int btn = Position.BTN.getPosNum();
     private int pot;
     private int bettingPos;
     private int actionPos;
@@ -33,6 +35,7 @@ public class BoardDto {
     public BoardDto(Board board) {
         this.id = board.getId();
         this.totalPlayer = board.getTotalPlayer();
+        this.btn = board.getBtn();
         this.blind = board.getBlind();
         this.pot = board.getPot();
         this.bettingPos = board.getBettingPos();
