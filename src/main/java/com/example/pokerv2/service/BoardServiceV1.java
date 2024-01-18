@@ -18,8 +18,10 @@ import com.example.pokerv2.repository.PlayerRepository;
 import com.example.pokerv2.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
@@ -160,6 +162,13 @@ public class BoardServiceV1 {
         }
     }
 
+    /**
+     * 쇼다운
+     *
+     * 1. 오버벳 반환
+     * 2. 승자 가리기
+     * 3. 팟 분배하기 (사이드 팟 생각)
+     */
     public GameResultDto showDown(Board board) {
 
         long[][] valueAndJokBoList = HandCalculator.calculateValue(board);
@@ -224,8 +233,9 @@ public class BoardServiceV1 {
         throw new CustomException(ErrorCode.BAD_REQUEST);
     }
 
-    @Transactional
+    @Transactional()
     public Player buyIn(Board board, User user, int bb) {
+
         int money = user.getMoney();
         int blind = board.getBlind();
         if (money < blind * bb)
