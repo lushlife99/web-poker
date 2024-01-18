@@ -116,7 +116,7 @@ public class BoardService {
             throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
         }
         user.setMoney(user.getMoney() - board.getBlind() * bb);
-        return Player.builder().user(user).bb(bb).status(PlayerStatus.FOLD).build();
+        return Player.builder().user(user).money(board.getBlind()*bb).status(PlayerStatus.FOLD).build();
     }
 
 

@@ -1,10 +1,16 @@
 package com.example.pokerv2.dto;
 
 import com.example.pokerv2.model.Hud;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class HudDto {
+
+
     private Long id;
     private Long userId;
     private int totalHands;

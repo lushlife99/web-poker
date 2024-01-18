@@ -1,5 +1,6 @@
 package com.example.pokerv2.model;
 
+import com.example.pokerv2.dto.PlayerDto;
 import com.example.pokerv2.enums.PlayerStatus;
 import com.example.pokerv2.enums.Position;
 import jakarta.persistence.*;
@@ -55,11 +56,17 @@ public class Player {
 
     private Position position;
 
-    private double bb;
+    private int money;
     private int card1;
     private int card2;
     private PlayerStatus status;
     private int totalCallSize;
     private int phaseCallSize;
+
+    public void changePlayerStatus(PlayerDto playerDto) {
+        this.money = playerDto.getMoney();
+        this.status = PlayerStatus.valueOf(playerDto.getStatus());
+        this.phaseCallSize = playerDto.getPhaseCallSize();
+    }
 
 }
