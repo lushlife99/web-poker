@@ -62,18 +62,22 @@ public class BoardService {
         else{
             board = Board.builder().phaseStatus(PhaseStatus.WAITING).build();
         }
-        int totalplayer = board.getTotalPlayer();
-        board.setTotalPlayer(++totalplayer);
+        board.setTotalPlayer(board.getTotalPlayer()+1);
 
         List<Player> players = board.getPlayers();
 
         Position position = pos(board);
         board = boardRepository.save(board);
 
-        Player player = Player.builder().user(user).board(board).status(PlayerStatus.FOLD).build();
+        Player player = buyIn(board, user, requestBb);
+                //Player.builder().user(user).board(board).status(PlayerStatus.FOLD).build();
         players.add(player);
         player.setPosition(position);
         playerRepository.save(player);
+
+        if(board.getTotalPlayer() > 1 && board.getPhaseStatus().equals(PhaseStatus.WAITING)){
+            board = startGame(board.getId());
+        }
 
         return new BoardDto(board);
     }
@@ -116,8 +120,30 @@ public class BoardService {
             throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
         }
         user.setMoney(user.getMoney() - board.getBlind() * bb);
-        return Player.builder().user(user).money(board.getBlind()*bb).status(PlayerStatus.FOLD).build();
+        return Player.builder().user(user).board(board).money(board.getBlind()*bb).status(PlayerStatus.FOLD).build();
     }
 
+    private void setCommunityCard(Board board, int order, int card) {
+        switch (order) {
+            case 1 -> board.setCommunityCard1(card);
+            case 2 -> board.setCommunityCard2(card);
+            case 3 -> board.setCommunityCard3(card);
+            case 4 -> board.setCommunityCard4(card);
+            case 5 -> board.setCommunityCard5(card);
+        };
+    }
 
+    @Transactional
+    public Board startGame(Long boardId){
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+
+        board.setPhaseStatus(PhaseStatus.PRE_FLOP);
+        for(Player player : board.getPlayers()){
+            player.setStatus(PlayerStatus.PLAY);
+        }
+
+        boardRepository.save(board);
+
+        return board;
+    }
 }
