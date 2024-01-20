@@ -397,10 +397,11 @@ public class BoardServiceV1 {
                 } else throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
 
                 player = players.get((btnPlayerIdx + 2) % players.size());
+                Player firstActionPlayer = players.get((btnPlayerIdx + 3) % players.size());
                 if (player.getMoney() > board.getBlind()) {
                     player.setMoney(player.getMoney() - board.getBlind());
                     player.setPhaseCallSize(board.getBlind());
-                    board.setBettingPos(player.getPosition().getPosNum());
+                    board.setBettingPos(firstActionPlayer.getPosition().getPosNum());
                 } else throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
 
             } else {
@@ -441,17 +442,10 @@ public class BoardServiceV1 {
 
         if(board.getTotalPlayer() == 2){
             board.setActionPos(board.getBtn());
-            return;
+        } else {
+            board.setActionPos(board.getBettingPos());
         }
 
-        for(int i = 0; i < players.size(); i++) {
-            Player player = players.get(i);
-            if(player.getPosition().getPosNum() == board.getBettingPos()){
-                Position firstActPos = players.get((i + 1) % players.size()).getPosition();
-                board.setActionPos(firstActPos.getPosNum());
-                break;
-            }
-        }
     }
 
     public BoardDto get(Long boardId, Principal principal) {
