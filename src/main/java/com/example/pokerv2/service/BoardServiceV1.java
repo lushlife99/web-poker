@@ -232,11 +232,18 @@ public class BoardServiceV1 {
             if(player.getStatus() == PlayerStatus.FOLD){
 
             }
+            else {
+                List<Integer> cards = new ArrayList<>();
+                int card1 = player.getCard1();
+                int card2 = player.getCard2();
+            }
         }
+
+
         //long[][] valueAndJokBoList = HandCalculator.calculateValue(board);
 
 
-        return null;
+        return new BoardDto(board);
     }
 
     /**
@@ -425,7 +432,13 @@ public class BoardServiceV1 {
     }
 
     private void setFirstActionPos(Board board) {
+
         List<Player> players = board.getPlayers();
+
+        if(board.getTotalPlayer() == 2){
+            board.setActionPos(board.getBtn());
+        }
+
         for(int i = 0; i < players.size(); i++) {
             Player player = players.get(i);
             if(player.getPosition().getPosNum() == board.getBettingPos()){
