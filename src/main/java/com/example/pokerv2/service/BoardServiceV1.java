@@ -297,9 +297,10 @@ public class BoardServiceV1 {
      */
     private Board beforeNextPhase(Board board) {
         List<Player> players = board.getPlayers();
-        int btnPlayerIdx = getBtnPlayerIdx(board);
+        int betPos = players.get((getBtnPlayerIdx(board) + 1) % players.size()).getPosition().getPosNum();
         initBet(board);
-        board.setActionPos(players.get((btnPlayerIdx + 1) % players.size()).getPosition().getPosNum());
+        board.setActionPos(betPos);
+        board.setBettingPos(betPos);
         return boardRepository.save(board);
     }
 
