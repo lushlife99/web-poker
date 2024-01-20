@@ -1,9 +1,14 @@
 package com.example.pokerv2.dto;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
+
+import java.util.List;
 
 
+@Setter
 @Getter
 @Builder
 public class GameResultDto {
@@ -28,6 +33,6 @@ public class GameResultDto {
     private boolean isWinner;
     private int earnedMoney;
     private long handValue;
-    private int[] jokBo;
+    private List<Integer> jokBo;
 
 }

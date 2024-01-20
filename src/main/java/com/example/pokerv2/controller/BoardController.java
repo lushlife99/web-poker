@@ -4,6 +4,8 @@ import com.example.pokerv2.dto.BoardDto;
 import com.example.pokerv2.service.BoardServiceV1;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,9 +35,9 @@ public class BoardController {
     }
 
     @PutMapping("/exit")
-    public BoardDto exitGame(@RequestBody BoardDto board, Principal principal) {
-
-        return boardServiceV1.sitOut(board, principal);
+    public ResponseEntity exitGame(@RequestBody BoardDto board, Principal principal) {
+        boardServiceV1.sitOut(board, principal);
+        return new ResponseEntity(HttpStatus.OK);
     }
 
     /**

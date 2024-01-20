@@ -16,6 +16,7 @@ import com.example.pokerv2.model.User;
 import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.repository.PlayerRepository;
 import com.example.pokerv2.repository.UserRepository;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -30,12 +31,13 @@ import java.util.*;
 @RequiredArgsConstructor
 public class BoardServiceV1 {
 
-    private static final int MAX_PLAYER = 6;
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
     private final PlayerRepository playerRepository;
     private final SimpMessagingTemplate simpMessagingTemplate;
+    private static final int MAX_PLAYER = 6;
     private final static String TOPIC_PREFIX = "/topic/board/";
+    private final static int RESULT_ANIMATION_DELAY = 5;
 
     /**
      * 24/01/04 chan
@@ -44,7 +46,7 @@ public class BoardServiceV1 {
      * <p>
      * 1. 플레이 가능한 보드를 찾는다. 없다면 만든다.
      * 2. money를 bb로 환전한다.
-     * 3. Player를 만들어서 입장시킨다.
+     * 3. Player 입장.
      */
 
     @Transactional
@@ -114,8 +116,6 @@ public class BoardServiceV1 {
         int actionPos = board.getActionPos();
         int actionPlayerIdx = 0;
 
-        boolean isAllInPlayerExist = false;
-
         for (int i = 0; i < players.size(); i++) {
             Player player = players.get(i);
             if (player.getPosition().getPosNum() == actionPos) {
@@ -135,56 +135,147 @@ public class BoardServiceV1 {
                     simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_ACTION.getDetail(), new BoardDto(board)));
                     return;
                 } else {
-                    board = beforeNextPhase(board);
                     nextPhase(board);
                     simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), new BoardDto(board)));
                     return;
                 }
-            } else if (nextActionCandidate.getStatus().equals(PlayerStatus.ALL_IN)) {
-                isAllInPlayerExist = true;
             }
         }
 
         /**
          * 게임이 종료된 시점.
-         * if 올인한 플레이어 존재 -> 쇼다운 로직 짜기.
-         * else 모두 폴드 -> 베팅 한 플레이어 승리.
          */
 
-        if (isAllInPlayerExist) {
-            GameResultDto gameResultDto = showDown(board);
-            takePot(board);
-            simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + boardDto.getId(), new MessageDto(MessageType.GAME_RESULT.getDetail(), gameResultDto));
+        endGame(board);
+    }
+
+    /**
+     * endGame
+     *
+     * 게임을 종료시킨다.
+     * 1. if 한명 빼고 다 폴드 -> 남은 플레이어 승리
+     * 2. fold하지 않은 플레이어가 두명 이상 -> 쇼다운
+     * @param board
+     */
+    public void endGame(Board board) {
+        List<Player> players = board.getPlayers();
+        int foldCount = 0;
+        for (Player player : players) {
+            if(player.getStatus() == PlayerStatus.FOLD){
+                foldCount++;
+            }
+        }
+
+        if(foldCount == board.getTotalPlayer() - 1){
+            BoardDto boardDto = winOnePlayer(board);
+            simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.GAME_END.getDetail(), boardDto));
+            try {
+                Thread.sleep(RESULT_ANIMATION_DELAY);
+            } catch (InterruptedException e){
+                e.getStackTrace();
+            }
         } else {
-            takePot(board);
+            BoardDto boardDto = showDown(board);
+            simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.SHOW_DOWN.getDetail(), boardDto));
+            int winnerCount = 0;
+
+            for (PlayerDto player : boardDto.getPlayers()) {
+                GameResultDto gameResult = player.getGameResult();
+                if(gameResult.isWinner()){
+                    winnerCount++;
+                }
+            }
+            try {
+                Thread.sleep(RESULT_ANIMATION_DELAY * winnerCount);
+            } catch (InterruptedException e){
+                e.getStackTrace();
+            }
         }
     }
 
-    public GameResultDto showDown(Board board) {
+    public BoardDto winOnePlayer(Board board) {
+        List<Player> players = board.getPlayers();
+        BoardDto boardDto = new BoardDto(board);
+        for(int i = 0; i < players.size(); i++){
+            Player player = players.get(i);
+            PlayerDto playerDto = boardDto.getPlayers().get(i);
+            if(player.getStatus() == PlayerStatus.PLAY || player.getStatus() == PlayerStatus.ALL_IN){
+                playerDto.setGameResult(
+                        GameResultDto.builder().isWinner(true)
+                                .earnedMoney(board.getPot())
+                                .build()
+                );
+                player.setMoney(player.getMoney() + board.getPot());
 
-        long[][] valueAndJokBoList = HandCalculator.calculateValue(board);
+            } else {
+                playerDto.setGameResult(
+                        GameResultDto.builder()
+                        .isWinner(false).build());
+            }
+        }
+
+        boardRepository.save(board);
+        return boardDto;
+    }
+
+    /**
+     * 쇼다운
+     *
+     * 1. 오버벳 반환
+     * 2. 승자 가리기
+     * 3. 팟 분배하기 (사이드 팟 생각)
+     */
+    public BoardDto showDown(Board board) {
+
+        List<Player> players = board.getPlayers();
+        for (Player player : players) {
+            if(player.getStatus() == PlayerStatus.FOLD){
+
+            }
+        }
+        //long[][] valueAndJokBoList = HandCalculator.calculateValue(board);
 
 
         return null;
     }
 
-    public void takePot(Board board) {
+    /**
+     * initBet
+     *
+     * 페이즈가 끝났을 때 각 플레이어들의 베팅을 팟에 모음.
+     * @param board
+     */
+    public void initBet(Board board) {
+        List<Player> players = board.getPlayers();
 
+        for (Player player : players) {
+            player.setTotalCallSize(player.getTotalCallSize() + player.getPhaseCallSize());
+            board.setPot(board.getPot() + player.getPhaseCallSize());
+            player.setPhaseCallSize(0);
+        }
     }
 
+    /**
+     * 다음 페이즈를 시작한다.
+     * @param board
+     */
     @Transactional
     public void nextPhase(Board board) {
-        if (board.getPhaseStatus() == PhaseStatus.PRE_FLOP)
+        beforeNextPhase(board);
+
+        if (board.getPhaseStatus() == PhaseStatus.PRE_FLOP) {
             board.setPhaseStatus(PhaseStatus.FLOP);
-        else if (board.getPhaseStatus() == PhaseStatus.FLOP)
-            board.setPhaseStatus(PhaseStatus.TURN);
-        else if (board.getPhaseStatus() == PhaseStatus.TURN)
-            board.setPhaseStatus(PhaseStatus.RIVER);
-        else if (board.getPhaseStatus() == PhaseStatus.RIVER) {
-            showDown(board);
-            takePot(board);
         }
 
+        else if (board.getPhaseStatus() == PhaseStatus.FLOP) {
+            board.setPhaseStatus(PhaseStatus.TURN);
+        }
+        else if (board.getPhaseStatus() == PhaseStatus.TURN) {
+            board.setPhaseStatus(PhaseStatus.RIVER);
+        }
+        else if (board.getPhaseStatus() == PhaseStatus.RIVER) {
+            showDown(board);
+        }
     }
 
 
@@ -195,12 +286,8 @@ public class BoardServiceV1 {
      */
     private Board beforeNextPhase(Board board) {
         List<Player> players = board.getPlayers();
-
-        for (Player player : players) {
-            board.setPot(board.getPot() + player.getPhaseCallSize());
-            player.setPhaseCallSize(0);
-        }
         int btnPlayerIdx = getBtnPlayerIdx(board);
+        initBet(board);
         board.setActionPos(players.get((btnPlayerIdx + 1) % players.size()).getPosition().getPosNum());
         return boardRepository.save(board);
     }
@@ -220,12 +307,10 @@ public class BoardServiceV1 {
         } else throw new CustomException(ErrorCode.BAD_REQUEST);
     }
 
-    public void test() {
-        throw new CustomException(ErrorCode.BAD_REQUEST);
-    }
 
-    @Transactional
+    @Transactional()
     public Player buyIn(Board board, User user, int bb) {
+
         int money = user.getMoney();
         int blind = board.getBlind();
         if (money < blind * bb)
@@ -255,14 +340,13 @@ public class BoardServiceV1 {
 
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         setBtnExistPlayer(board);
-        setFirstActionPos(board);
         takeAnte(board);
+        setFirstActionPos(board);
         board.setPhaseStatus(PhaseStatus.PRE_FLOP);
         dealCard(board);
         for (Player player : board.getPlayers()) {
             player.setStatus(PlayerStatus.PLAY);
         }
-        board.setLastActionTime(LocalDateTime.now());
         boardRepository.save(board);
         simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.GAME_START.getDetail(), new BoardDto(board)));
         return board;
@@ -305,6 +389,7 @@ public class BoardServiceV1 {
                 if (player.getMoney() > board.getBlind()) {
                     player.setMoney(player.getMoney() - board.getBlind());
                     player.setPhaseCallSize(board.getBlind());
+                    board.setBettingPos(player.getPosition().getPosNum());
                 } else throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
 
             } else {
@@ -318,8 +403,11 @@ public class BoardServiceV1 {
                 if (player.getMoney() > board.getBlind()) {
                     player.setMoney(player.getMoney() - board.getBlind());
                     player.setPhaseCallSize(board.getBlind());
+                    board.setBettingPos(player.getPosition().getPosNum());
                 } else throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
             }
+            board.setBettingSize(board.getBlind());
+            board.setLastActionTime(LocalDateTime.now());
         } else throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
 
     }
@@ -338,11 +426,14 @@ public class BoardServiceV1 {
 
     private void setFirstActionPos(Board board) {
         List<Player> players = board.getPlayers();
-        int btnPlayerIdx = getBtnPlayerIdx(board);
-        int actPos = players.get( (btnPlayerIdx + 1) % players.size()).getPosition().getPosNum();
-        board.setActionPos(actPos);
-        board.setBettingPos(actPos);
-
+        for(int i = 0; i < players.size(); i++) {
+            Player player = players.get(i);
+            if(player.getPosition().getPosNum() == board.getBettingPos()){
+                Position firstActPos = players.get((i + 1) % players.size()).getPosition();
+                board.setActionPos(firstActPos.getPosNum());
+                break;
+            }
+        }
     }
 
     public BoardDto get(Long boardId, Principal principal) {
@@ -388,12 +479,23 @@ public class BoardServiceV1 {
     }
 
     @Transactional
-    public BoardDto sitOut(BoardDto boardDto, Principal principal) {
+    public void sitOut(BoardDto boardDto, Principal principal) {
         User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
+        int actionablePlayerCount = 0;
+        boolean isAllinPlayerExist = false;
+
         Player exitPlayer;
         for (Player player : players) {
+            if(player.getStatus() == PlayerStatus.PLAY){
+                actionablePlayerCount++;
+            }
+
+            if(player.getStatus() == PlayerStatus.ALL_IN){
+                isAllinPlayerExist = true;
+            }
+
             if (player.getUser().equals(user)) {
                 exitPlayer = playerRepository.findById(player.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
                 user.setMoney(user.getMoney() + exitPlayer.getMoney());
@@ -405,11 +507,15 @@ public class BoardServiceV1 {
                 board.setPlayers(players);
                 board.setTotalPlayer(board.getTotalPlayer() - 1);
                 playerRepository.delete(exitPlayer);
-                simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.PLAYER_EXIT.getDetail(), new BoardDto(board)));
-                break;
             }
         }
-        return new BoardDto(board);
+
+        simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.PLAYER_EXIT.getDetail(), new BoardDto(board)));
+
+        if(actionablePlayerCount == 1){
+           endGame(board);
+        }
+
     }
 
     private boolean isSeatInBoard(Board board, String userId) {
@@ -423,52 +529,29 @@ public class BoardServiceV1 {
     private void dealCard(Board board) {
         Set<Integer> cards = new HashSet<>();
         Random random = new Random();
+        int playerCardIdxPrefix = 5;
+        int cardSize = board.getTotalPlayer() * 2 + 5;
 
-        int cardCount = board.getTotalPlayer() * 2 + 5;
-
-        while (cards.size() < cardCount) {
+        while (cards.size() < cardSize) {
             int randomNumber = random.nextInt(52);
             cards.add(randomNumber);
         }
 
         List<Integer> cardList = new ArrayList<>(cards);
+        board.setCommunityCard1(cardList.get(0));
+        board.setCommunityCard2(cardList.get(1));
+        board.setCommunityCard3(cardList.get(2));
+        board.setCommunityCard4(cardList.get(3));
+        board.setCommunityCard5(cardList.get(4));
 
-        for (int i = 0; i < 5; i++) {
-            int communityCard = cardList.get(i);
-            setCommunityCard(board, i + 1, communityCard);
-        }
-
-        int playerCardIndex = 5;
         List<Player> players = board.getPlayers();
 
         for (Player player : players) {
-            int playerCard = cardList.get(playerCardIndex);
-            int playerCard2 = cardList.get(playerCardIndex + 1);
+            int playerCard = cardList.get(playerCardIdxPrefix);
+            int playerCard2 = cardList.get(playerCardIdxPrefix + 1);
             player.setCard1(playerCard);
             player.setCard2(playerCard2);
-            playerCardIndex += 2;
-        }
-    }
-
-    private void setCommunityCard(Board board, int order, int card) {
-        switch (order) {
-            case 1:
-                board.setCommunityCard1(card);
-                break;
-            case 2:
-                board.setCommunityCard2(card);
-                break;
-            case 3:
-                board.setCommunityCard3(card);
-                break;
-            case 4:
-                board.setCommunityCard4(card);
-                break;
-            case 5:
-                board.setCommunityCard5(card);
-                break;
-            default:
-                break;
+            playerCardIdxPrefix += 2;
         }
     }
 }
