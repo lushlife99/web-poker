@@ -1,19 +1,25 @@
-package com.example.pokerv2.service;
+package com.example.pokerv2.utils;
 
 
 import com.example.pokerv2.dto.GameResultDto;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import com.example.pokerv2.error.CustomException;
+import com.example.pokerv2.error.ErrorCode;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Service
-@RequiredArgsConstructor
-public class HandCalculator {
+@Slf4j
+@Component
+public class HandCalculatorUtils {
 
     /**
      * 24/01/15 chan
+     *
+     * 핸드의 세기를 계산해주는 유틸클래스.
+     * 계산한 핸드의 세기와, 족보를 이루는 카드리스트들을 GameResultDto에 담아준다.
+     *
      * <p>
      * 카드가 저장된 방법.
      * 13으로 나눈 나머지 : 카드의 숫자
@@ -24,9 +30,11 @@ public class HandCalculator {
      * <p>
      * 함수가 너무 긺. 나중에 리팩토링 하기.
      *
-     * @param cards
-     * @return GameResultDto
      */
+
+    private HandCalculatorUtils(){
+        throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+    }
 
     public static GameResultDto calculateValue(List<Integer> cards) {
 

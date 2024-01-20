@@ -16,7 +16,7 @@ import com.example.pokerv2.model.User;
 import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.repository.PlayerRepository;
 import com.example.pokerv2.repository.UserRepository;
-import jakarta.persistence.criteria.CriteriaBuilder;
+import com.example.pokerv2.utils.HandCalculatorUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -73,7 +73,7 @@ public class BoardServiceV1 {
 
     /**
      * 24/01/10 chan
-     * <p>
+     *
      * 액션을 받을 때 고려해야 할 것
      * 1. 플레이어들의 액션이 다 끝났는가? true -> 다음 페이즈. false -> 다음 액션 순서 정해주기
      * 플레이어들의 액션이 다 끝났는지 어떻게 알 수 있을까?
@@ -142,6 +142,8 @@ public class BoardServiceV1 {
             }
         }
 
+
+
         /**
          * 게임이 종료된 시점.
          */
@@ -158,6 +160,8 @@ public class BoardServiceV1 {
      * @param board
      */
     public void endGame(Board board) {
+
+
         List<Player> players = board.getPlayers();
         int foldCount = 0;
         for (Player player : players) {
@@ -174,7 +178,9 @@ public class BoardServiceV1 {
             } catch (InterruptedException e){
                 e.getStackTrace();
             }
-        } else {
+        }
+
+        else {
             BoardDto boardDto = showDown(board);
             simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.SHOW_DOWN.getDetail(), boardDto));
             int winnerCount = 0;
@@ -191,6 +197,28 @@ public class BoardServiceV1 {
                 e.getStackTrace();
             }
         }
+    }
+
+    @Transactional
+    private void refundOverBet(Board board) {
+        int bettingPlayerIdx = getPlayerIdxByPos(board, board.getBettingPos());
+        int bettingSize = board.getBettingSize();
+        int maxCallSize = -1;
+        List<Player> players = board.getPlayers();
+
+
+        for(int i = bettingPlayerIdx + 1; i < bettingPlayerIdx + 1 + board.getTotalPlayer(); i++) {
+            Player player = players.get(i % board.getTotalPlayer());
+            if(player.getPhaseCallSize() == bettingSize)
+                return;
+            else if(maxCallSize < player.getPhaseCallSize()) {
+                maxCallSize = player.getPhaseCallSize();
+            }
+        }
+
+        Player overBetPlayer = players.get(bettingPlayerIdx);
+        overBetPlayer.setMoney(overBetPlayer.getMoney() + bettingSize - maxCallSize);
+        overBetPlayer.setPhaseCallSize(maxCallSize);
     }
 
     public BoardDto winOnePlayer(Board board) {
@@ -227,16 +255,33 @@ public class BoardServiceV1 {
      */
     public BoardDto showDown(Board board) {
 
+        refundOverBet(board);
+        BoardDto boardDto = determineWinner(board);
+
+        return boardDto;
+    }
+
+    private static BoardDto determineWinner(Board board) {
         List<Player> players = board.getPlayers();
-        for (Player player : players) {
+        List<Integer> communityCards = new ArrayList<>(List.of(board.getCommunityCard1(), board.getCommunityCard2(), board.getCommunityCard3(), board.getCommunityCard4(), board.getCommunityCard5()));
+        GameResultDto gameResultDto;
+        BoardDto boardDto = new BoardDto(board);
+
+        for(int i = 0; i < board.getTotalPlayer(); i++) {
+            Player player = players.get(i);
+
             if(player.getStatus() == PlayerStatus.FOLD){
-
+                gameResultDto = GameResultDto.builder().isWinner(false).build();
             }
+            else {
+                ArrayList<Integer> cardPool = new ArrayList<>(List.copyOf(communityCards));
+                cardPool.add(player.getCard1());
+                cardPool.add(player.getCard2());
+                gameResultDto = HandCalculatorUtils.calculateValue(cardPool);
+            }
+            boardDto.getPlayers().get(i).setGameResult(gameResultDto);
         }
-        //long[][] valueAndJokBoList = HandCalculator.calculateValue(board);
-
-
-        return null;
+        return boardDto;
     }
 
     /**
@@ -253,6 +298,8 @@ public class BoardServiceV1 {
             board.setPot(board.getPot() + player.getPhaseCallSize());
             player.setPhaseCallSize(0);
         }
+        board.setBettingSize(0);
+
     }
 
     /**
@@ -286,9 +333,10 @@ public class BoardServiceV1 {
      */
     private Board beforeNextPhase(Board board) {
         List<Player> players = board.getPlayers();
-        int btnPlayerIdx = getBtnPlayerIdx(board);
+        int betPos = players.get((getPlayerIdxByPos(board, board.getBtn()) + 1) % players.size()).getPosition().getPosNum();
         initBet(board);
-        board.setActionPos(players.get((btnPlayerIdx + 1) % players.size()).getPosition().getPosNum());
+        board.setActionPos(betPos);
+        board.setBettingPos(betPos);
         return boardRepository.save(board);
     }
 
@@ -376,7 +424,7 @@ public class BoardServiceV1 {
 
     public void takeAnte(Board board) {
         List<Player> players = board.getPlayers();
-        int btnPlayerIdx = getBtnPlayerIdx(board);
+        int btnPlayerIdx = getPlayerIdxByPos(board, board.getBtn());
         if (btnPlayerIdx != -1) {
             if (board.getTotalPlayer() != 2) {
                 Player player = players.get((btnPlayerIdx + 1) % players.size());
@@ -386,10 +434,11 @@ public class BoardServiceV1 {
                 } else throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
 
                 player = players.get((btnPlayerIdx + 2) % players.size());
+                Player firstActionPlayer = players.get((btnPlayerIdx + 3) % players.size());
                 if (player.getMoney() > board.getBlind()) {
                     player.setMoney(player.getMoney() - board.getBlind());
                     player.setPhaseCallSize(board.getBlind());
-                    board.setBettingPos(player.getPosition().getPosNum());
+                    board.setBettingPos(firstActionPlayer.getPosition().getPosNum());
                 } else throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
 
             } else {
@@ -397,13 +446,13 @@ public class BoardServiceV1 {
                 if (player.getMoney() > board.getBlind()) {
                     player.setMoney((int) (player.getMoney() - board.getBlind() * 0.5));
                     player.setPhaseCallSize((int) (board.getBlind() * 0.5));
+                    board.setBettingPos(player.getPosition().getPosNum());
                 } else throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
 
                 player = players.get((btnPlayerIdx + 1) % players.size());
                 if (player.getMoney() > board.getBlind()) {
                     player.setMoney(player.getMoney() - board.getBlind());
                     player.setPhaseCallSize(board.getBlind());
-                    board.setBettingPos(player.getPosition().getPosNum());
                 } else throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
             }
             board.setBettingSize(board.getBlind());
@@ -412,12 +461,12 @@ public class BoardServiceV1 {
 
     }
 
-    private int getBtnPlayerIdx(Board board) {
+    private int getPlayerIdxByPos(Board board, int posNum) {
         List<Player> players = board.getPlayers();
 
         for (int i = 0; i < board.getTotalPlayer(); i++) {
             Player player = players.get(i);
-            if (player.getPosition().getPosNum() == board.getBtn())
+            if (player.getPosition().getPosNum() == posNum)
                 return i;
         }
 
@@ -425,15 +474,15 @@ public class BoardServiceV1 {
     }
 
     private void setFirstActionPos(Board board) {
+
         List<Player> players = board.getPlayers();
-        for(int i = 0; i < players.size(); i++) {
-            Player player = players.get(i);
-            if(player.getPosition().getPosNum() == board.getBettingPos()){
-                Position firstActPos = players.get((i + 1) % players.size()).getPosition();
-                board.setActionPos(firstActPos.getPosNum());
-                break;
-            }
+
+        if(board.getTotalPlayer() == 2){
+            board.setActionPos(board.getBtn());
+        } else {
+            board.setActionPos(board.getBettingPos());
         }
+
     }
 
     public BoardDto get(Long boardId, Principal principal) {
