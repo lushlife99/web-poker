@@ -262,6 +262,8 @@ public class BoardServiceV1 {
             board.setPot(board.getPot() + player.getPhaseCallSize());
             player.setPhaseCallSize(0);
         }
+        board.setBettingSize(0);
+
     }
 
     /**
@@ -395,11 +397,10 @@ public class BoardServiceV1 {
                 } else throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
 
                 player = players.get((btnPlayerIdx + 2) % players.size());
-                Player firstActionPlayer = players.get((btnPlayerIdx + 3) % players.size());
                 if (player.getMoney() > board.getBlind()) {
                     player.setMoney(player.getMoney() - board.getBlind());
                     player.setPhaseCallSize(board.getBlind());
-                    board.setBettingPos(firstActionPlayer.getPosition().getPosNum());
+                    board.setBettingPos(player.getPosition().getPosNum());
                 } else throw new CustomException(ErrorCode.NOT_ENOUGH_MONEY);
 
             } else {
@@ -440,6 +441,7 @@ public class BoardServiceV1 {
 
         if(board.getTotalPlayer() == 2){
             board.setActionPos(board.getBtn());
+            return;
         }
 
         for(int i = 0; i < players.size(); i++) {
