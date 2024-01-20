@@ -1,6 +1,5 @@
 package com.example.pokerv2.dto;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;

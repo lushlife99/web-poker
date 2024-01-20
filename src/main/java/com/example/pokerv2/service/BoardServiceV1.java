@@ -16,7 +16,7 @@ import com.example.pokerv2.model.User;
 import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.repository.PlayerRepository;
 import com.example.pokerv2.repository.UserRepository;
-import jakarta.persistence.criteria.CriteriaBuilder;
+import com.example.pokerv2.utils.HandCalculatorUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -73,7 +73,7 @@ public class BoardServiceV1 {
 
     /**
      * 24/01/10 chan
-     * <p>
+     *
      * 액션을 받을 때 고려해야 할 것
      * 1. 플레이어들의 액션이 다 끝났는가? true -> 다음 페이즈. false -> 다음 액션 순서 정해주기
      * 플레이어들의 액션이 다 끝났는지 어떻게 알 수 있을까?
@@ -160,6 +160,8 @@ public class BoardServiceV1 {
      * @param board
      */
     public void endGame(Board board) {
+
+
         List<Player> players = board.getPlayers();
         int foldCount = 0;
         for (Player player : players) {
@@ -176,7 +178,9 @@ public class BoardServiceV1 {
             } catch (InterruptedException e){
                 e.getStackTrace();
             }
-        } else {
+        }
+
+        else {
             BoardDto boardDto = showDown(board);
             simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.SHOW_DOWN.getDetail(), boardDto));
             int winnerCount = 0;
@@ -193,6 +197,28 @@ public class BoardServiceV1 {
                 e.getStackTrace();
             }
         }
+    }
+
+    @Transactional
+    private void refundOverBet(Board board) {
+        int bettingPlayerIdx = getPlayerIdxByPos(board, board.getBettingPos());
+        int bettingSize = board.getBettingSize();
+        int maxCallSize = -1;
+        List<Player> players = board.getPlayers();
+
+
+        for(int i = bettingPlayerIdx + 1; i < bettingPlayerIdx + 1 + board.getTotalPlayer(); i++) {
+            Player player = players.get(i % board.getTotalPlayer());
+            if(player.getPhaseCallSize() == bettingSize)
+                return;
+            else if(maxCallSize < player.getPhaseCallSize()) {
+                maxCallSize = player.getPhaseCallSize();
+            }
+        }
+
+        Player overBetPlayer = players.get(bettingPlayerIdx);
+        overBetPlayer.setMoney(overBetPlayer.getMoney() + bettingSize - maxCallSize);
+        overBetPlayer.setPhaseCallSize(maxCallSize);
     }
 
     public BoardDto winOnePlayer(Board board) {
@@ -229,23 +255,33 @@ public class BoardServiceV1 {
      */
     public BoardDto showDown(Board board) {
 
-        List<Player> players = board.getPlayers();
-        for (Player player : players) {
-            if(player.getStatus() == PlayerStatus.FOLD){
+        refundOverBet(board);
+        BoardDto boardDto = determineWinner(board);
 
+        return boardDto;
+    }
+
+    private static BoardDto determineWinner(Board board) {
+        List<Player> players = board.getPlayers();
+        List<Integer> communityCards = new ArrayList<>(List.of(board.getCommunityCard1(), board.getCommunityCard2(), board.getCommunityCard3(), board.getCommunityCard4(), board.getCommunityCard5()));
+        GameResultDto gameResultDto;
+        BoardDto boardDto = new BoardDto(board);
+
+        for(int i = 0; i < board.getTotalPlayer(); i++) {
+            Player player = players.get(i);
+
+            if(player.getStatus() == PlayerStatus.FOLD){
+                gameResultDto = GameResultDto.builder().isWinner(false).build();
             }
             else {
-                List<Integer> cards = new ArrayList<>();
-                int card1 = player.getCard1();
-                int card2 = player.getCard2();
+                ArrayList<Integer> cardPool = new ArrayList<>(List.copyOf(communityCards));
+                cardPool.add(player.getCard1());
+                cardPool.add(player.getCard2());
+                gameResultDto = HandCalculatorUtils.calculateValue(cardPool);
             }
+            boardDto.getPlayers().get(i).setGameResult(gameResultDto);
         }
-
-
-        //long[][] valueAndJokBoList = HandCalculator.calculateValue(board);
-
-
-        return new BoardDto(board);
+        return boardDto;
     }
 
     /**
@@ -297,7 +333,7 @@ public class BoardServiceV1 {
      */
     private Board beforeNextPhase(Board board) {
         List<Player> players = board.getPlayers();
-        int betPos = players.get((getBtnPlayerIdx(board) + 1) % players.size()).getPosition().getPosNum();
+        int betPos = players.get((getPlayerIdxByPos(board, board.getBtn()) + 1) % players.size()).getPosition().getPosNum();
         initBet(board);
         board.setActionPos(betPos);
         board.setBettingPos(betPos);
@@ -388,7 +424,7 @@ public class BoardServiceV1 {
 
     public void takeAnte(Board board) {
         List<Player> players = board.getPlayers();
-        int btnPlayerIdx = getBtnPlayerIdx(board);
+        int btnPlayerIdx = getPlayerIdxByPos(board, board.getBtn());
         if (btnPlayerIdx != -1) {
             if (board.getTotalPlayer() != 2) {
                 Player player = players.get((btnPlayerIdx + 1) % players.size());
@@ -425,12 +461,12 @@ public class BoardServiceV1 {
 
     }
 
-    private int getBtnPlayerIdx(Board board) {
+    private int getPlayerIdxByPos(Board board, int posNum) {
         List<Player> players = board.getPlayers();
 
         for (int i = 0; i < board.getTotalPlayer(); i++) {
             Player player = players.get(i);
-            if (player.getPosition().getPosNum() == board.getBtn())
+            if (player.getPosition().getPosNum() == posNum)
                 return i;
         }
 
