@@ -206,17 +206,19 @@ public class HandCalculatorUtils {
                 } else {
                     secondPairRank = rank;
                 }
-            } else if (highCard % 13 < rank) {
-                highCard = card;
             }
         }
 
         if (firstPairRank != -1 && secondPairRank != -1) {
             jokBo.clear();
-            for (Integer pairCard : cards) {
-                int rank = pairCard % 13;
+            for (Integer card : cards) {
+                int rank = card % 13;
                 if (rank == firstPairRank || rank == secondPairRank) {
-                    jokBo.add(pairCard);
+                    jokBo.add(card);
+                } else {
+                    if(highCard % 13 < rank){
+                        highCard = card;
+                    }
                 }
             }
             jokBo.add(highCard);

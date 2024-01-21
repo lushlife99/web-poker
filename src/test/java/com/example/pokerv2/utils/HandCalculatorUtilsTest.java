@@ -216,12 +216,141 @@ class HandCalculatorUtilsTest {
         printTestDetails(cards, jokBo);
     }
 
+    @Test
+    @DisplayName("트리플 검증 체크")
+    void evaluateTripleTest() {
+
+        //given
+        ArrayList<Integer> threeOfAKindJokBo = new ArrayList<>(List.of(
+                CardUtils.getCardValue("10", "d"),
+                CardUtils.getCardValue("10", "h"),
+                CardUtils.getCardValue("10", "s"),
+                CardUtils.getCardValue("7", "c"),
+                CardUtils.getCardValue("8", "d")
+        ));
+        ArrayList<Integer> cards = new ArrayList<>(CARD_SIZE);
+
+        Collections.sort(threeOfAKindJokBo);
+        cards.addAll(threeOfAKindJokBo);
+
+        cards.add(CardUtils.getCardValue("2", "s"));
+        cards.add(CardUtils.getCardValue("6", "s"));
+
+        //when
+        GameResultDto gameResultDto = HandCalculatorUtils.calculateValue(cards);
+        List<Integer> jokBo = gameResultDto.getJokBo();
+        Collections.sort(jokBo);
+
+        //then
+        assertThat(HandCalculatorUtils.getHandContextByValue(gameResultDto.getHandValue())).isEqualTo(HandValue.THREE_OF_A_KIND.getDetail());
+        assertThat(jokBo).isEqualTo(threeOfAKindJokBo);
+
+        printTestDetails(cards, jokBo);
+    }
+
+    @Test
+    @DisplayName("투페어 검증 체크")
+    void evaluateTwoPairTest() {
+
+        //given
+        ArrayList<Integer> twoPairJokBo = new ArrayList<>(List.of(
+                CardUtils.getCardValue("10", "d"),
+                CardUtils.getCardValue("10", "h"),
+                CardUtils.getCardValue("8", "s"),
+                CardUtils.getCardValue("8", "c"),
+                CardUtils.getCardValue("7", "d")
+        ));
+        ArrayList<Integer> cards = new ArrayList<>(CARD_SIZE);
+
+        Collections.sort(twoPairJokBo);
+        cards.addAll(twoPairJokBo);
+
+        cards.add(CardUtils.getCardValue("2", "s"));
+        cards.add(CardUtils.getCardValue("6", "s"));
+
+        //when
+        GameResultDto gameResultDto = HandCalculatorUtils.calculateValue(cards);
+        List<Integer> jokBo = gameResultDto.getJokBo();
+        Collections.sort(jokBo);
+
+        //then
+        assertThat(HandCalculatorUtils.getHandContextByValue(gameResultDto.getHandValue())).isEqualTo(HandValue.TWO_PAIR.getDetail());
+        assertThat(jokBo).isEqualTo(twoPairJokBo);
+
+        printTestDetails(cards, jokBo);
+    }
+
+    @Test
+    @DisplayName("원페어 검증 체크")
+    void evaluateOnePairTest() {
+
+        //given
+        ArrayList<Integer> onePairJokBo = new ArrayList<>(List.of(
+                CardUtils.getCardValue("10", "d"),
+                CardUtils.getCardValue("10", "h"),
+                CardUtils.getCardValue("8", "s"),
+                CardUtils.getCardValue("7", "c"),
+                CardUtils.getCardValue("6", "d")
+        ));
+        ArrayList<Integer> cards = new ArrayList<>(CARD_SIZE);
+
+        Collections.sort(onePairJokBo);
+        cards.addAll(onePairJokBo);
+
+        cards.add(CardUtils.getCardValue("2", "s"));
+        cards.add(CardUtils.getCardValue("3", "s"));
+
+        //when
+        GameResultDto gameResultDto = HandCalculatorUtils.calculateValue(cards);
+        List<Integer> jokBo = gameResultDto.getJokBo();
+        Collections.sort(jokBo);
+
+        //then
+        assertThat(HandCalculatorUtils.getHandContextByValue(gameResultDto.getHandValue())).isEqualTo(HandValue.ONE_PAIR.getDetail());
+        assertThat(jokBo).isEqualTo(onePairJokBo);
+
+        printTestDetails(cards, jokBo);
+    }
+
+    @Test
+    @DisplayName("하이카드 검증 체크")
+    void evaluateHighCardTest() {
+
+        //given
+        ArrayList<Integer> highCardJokBo = new ArrayList<>(List.of(
+                CardUtils.getCardValue("A", "d"),
+                CardUtils.getCardValue("K", "h"),
+                CardUtils.getCardValue("8", "s"),
+                CardUtils.getCardValue("7", "c"),
+                CardUtils.getCardValue("6", "d")
+        ));
+        ArrayList<Integer> cards = new ArrayList<>(CARD_SIZE);
+
+        Collections.sort(highCardJokBo);
+        cards.addAll(highCardJokBo);
+
+        cards.add(CardUtils.getCardValue("2", "s"));
+        cards.add(CardUtils.getCardValue("3", "s"));
+
+        //when
+        GameResultDto gameResultDto = HandCalculatorUtils.calculateValue(cards);
+        List<Integer> jokBo = gameResultDto.getJokBo();
+        Collections.sort(jokBo);
+
+        //then
+        assertThat(HandCalculatorUtils.getHandContextByValue(gameResultDto.getHandValue())).isEqualTo(HandValue.HIGH_CARD.getDetail());
+        assertThat(jokBo).isEqualTo(highCardJokBo);
+
+        printTestDetails(cards, jokBo);
+    }
+
     public static void printTestDetails(List<Integer> cards, List<Integer> jokBo){
         ArrayList<String> cardContexts = new ArrayList<>();
         for (Integer card : cards) {
             cardContexts.add(CardUtils.getCardContext(card));
         }
         log.info("\nCard List: {}", cardContexts);
+
         cardContexts.clear();
 
         for (Integer card : jokBo) {
@@ -229,5 +358,7 @@ class HandCalculatorUtilsTest {
         }
         log.info("\nJokBo List: {}", cardContexts);
     }
+
+
 
 }
