@@ -17,6 +17,7 @@ import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.repository.PlayerRepository;
 import com.example.pokerv2.repository.UserRepository;
 import com.example.pokerv2.utils.HandCalculatorUtils;
+import com.example.pokerv2.utils.PotDistributorUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -172,30 +173,12 @@ public class BoardServiceV1 {
 
         if(foldCount == board.getTotalPlayer() - 1){
             BoardDto boardDto = winOnePlayer(board);
-            simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.GAME_END.getDetail(), boardDto));
-            try {
-                Thread.sleep(RESULT_ANIMATION_DELAY);
-            } catch (InterruptedException e){
-                e.getStackTrace();
-            }
+
         }
 
         else {
             BoardDto boardDto = showDown(board);
-            simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.SHOW_DOWN.getDetail(), boardDto));
-            int winnerCount = 0;
 
-            for (PlayerDto player : boardDto.getPlayers()) {
-                GameResultDto gameResult = player.getGameResult();
-                if(gameResult.isWinner()){
-                    winnerCount++;
-                }
-            }
-            try {
-                Thread.sleep(RESULT_ANIMATION_DELAY * winnerCount);
-            } catch (InterruptedException e){
-                e.getStackTrace();
-            }
         }
     }
 
@@ -243,6 +226,15 @@ public class BoardServiceV1 {
         }
 
         boardRepository.save(board);
+
+        simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.GAME_END.getDetail(), boardDto));
+
+        try {
+            Thread.sleep(RESULT_ANIMATION_DELAY);
+        } catch (InterruptedException e){
+            e.getStackTrace();
+        }
+
         return boardDto;
     }
 
@@ -257,7 +249,22 @@ public class BoardServiceV1 {
 
         refundOverBet(board);
         BoardDto boardDto = determineWinner(board);
+        PotDistributorUtils.distribute(boardDto);
+        int winnerCount = 0;
 
+        simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.SHOW_DOWN.getDetail(), boardDto));
+
+        for (PlayerDto player : boardDto.getPlayers()) {
+            GameResultDto gameResult = player.getGameResult();
+            if(gameResult.isWinner()){
+                winnerCount++;
+            }
+        }
+        try {
+            Thread.sleep(RESULT_ANIMATION_DELAY * winnerCount);
+        } catch (InterruptedException e){
+            e.getStackTrace();
+        }
         return boardDto;
     }
 
