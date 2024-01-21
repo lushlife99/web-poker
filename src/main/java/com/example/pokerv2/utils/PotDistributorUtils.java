@@ -3,8 +3,6 @@ package com.example.pokerv2.utils;
 import com.example.pokerv2.dto.BoardDto;
 import com.example.pokerv2.dto.GameResultDto;
 import com.example.pokerv2.dto.PlayerDto;
-import com.example.pokerv2.error.CustomException;
-import com.example.pokerv2.error.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -22,16 +20,16 @@ public class PotDistributorUtils {
      * 쇼다운 시 승자에 따라 팟을 분배하는 유틸 클래스
      *
      */
-    private static final Comparator<PlayerDto> HAND_VALUE_COMPARATOR = Comparator.comparingLong(p -> p.getGameResult().getHandValue());
 
-    private PotDistributorUtils() {
-        throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
-    }
+    private static final Comparator<PlayerDto> HAND_VALUE_COMPARATOR = Comparator
+            .comparingLong(p -> p.getGameResult().getHandValue());
+
+    private PotDistributorUtils() {}
 
     public static void distribute(BoardDto boardDto) {
         List<PlayerDto> players = boardDto.getPlayers();
         List<PlayerDto> sortedPlayers = players.stream()
-                .sorted(HAND_VALUE_COMPARATOR)
+                .sorted(HAND_VALUE_COMPARATOR.reversed())
                 .collect(Collectors.toList());
 
         for(int i = 0; i < boardDto.getTotalPlayer(); i++) {
@@ -55,10 +53,15 @@ public class PotDistributorUtils {
                 gameResult.setEarnedMoney(gameResult.getEarnedMoney() + takePotAmount);
             }
 
+            if (winPlayer.getGameResult().getEarnedMoney() != 0){
+                winPlayer.getGameResult().setWinner(true);
+            }
+
             if(boardDto.getPot() == 0) {
                 boardDto.setPlayers(sortedPlayers);
                 break;
             }
+
         }
     }
 }
