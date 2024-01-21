@@ -40,8 +40,8 @@ public class HandCalculatorUtils {
     }
     public static GameResultDto calculateValue(List<Integer> cards) {
         List<Integer> jokBoList = new ArrayList<>();
-        Collections.sort(cards, Collections.reverseOrder());
-        Long handValue = 0L;
+        cards.sort(Collections.reverseOrder());
+        long handValue;
 
         handValue = evaluateRoyalStraightFlush(cards, jokBoList);
         if (handValue == -1L) {
@@ -119,12 +119,7 @@ public class HandCalculatorUtils {
      * @return 하이카드의 밸류 (5장의 하이카드)
      */
     private static long evaluateHighCard(List<Integer> cards, List<Integer> jokBo) {
-        Collections.sort(cards, new Comparator<Integer>() {
-            @Override
-            public int compare(Integer o1, Integer o2) {
-                return o2 % 13 - o1 % 13;
-            }
-        });
+        cards.sort(CardUtils.rankComparator());
 
         jokBo.clear();
         int cnt = 0;
@@ -177,6 +172,7 @@ public class HandCalculatorUtils {
                     } else break;
                 }
             }
+
             return ONE_PAIR_VALUE_PREFIX + (pairRank + 1) * 1000000L + (jokBo.get(2) % 13 + 1) * 10000L + (jokBo.get(3) % 13 + 1) * 100L + (jokBo.get(4) % 13 + 1);
         }
 
@@ -295,7 +291,7 @@ public class HandCalculatorUtils {
      * @return 스트레이트의 밸류 (스트레이트를 이루는 족보중 하이카드)
      */
     private static long evaluateStraight(List<Integer> cards, List<Integer> jokBo) {
-        Collections.sort(cards, CardUtils.rankComparator());
+        cards.sort(CardUtils.rankComparator());
         for (int i = 0; i <= cards.size() - 5; i++) {
             boolean isStraight = true;
             int value = -1;
@@ -359,12 +355,8 @@ public class HandCalculatorUtils {
         }
 
         if (highestRank != -1) {
-            Collections.sort(jokBo, new Comparator<Integer>() {
-                @Override
-                public int compare(Integer o1, Integer o2) {
-                    return o2 % 13 - o1 % 13; // rank 내림차순으로 정렬
-                }
-            });
+            jokBo.sort(CardUtils.rankComparator());
+
 
             long flushValue = 0L;
             long valuePrefix = 100000000L;
@@ -431,7 +423,7 @@ public class HandCalculatorUtils {
             return FULL_HOUSE_VALUE_PREFIX + (threeOfKindValue + 1) * 100 + twoOfKindValue + 1;
         }
 
-        return -1;
+        return -1L;
     }
 
     /**
@@ -482,11 +474,11 @@ public class HandCalculatorUtils {
      */
     private static long evaluateStraightFlush(List<Integer> cards, List<Integer> jokBo) {
 
-        int value = -1;
+        int value;
 
         for (int i = 0; i <= cards.size() - 5; i++) {
             boolean isStraightFlush = true;
-
+            value = cards.get(i) % 13;
             for (int j = 0; j < 4; j++) {
                 int currentCard = cards.get(i + j);
                 int nextCard = cards.get(i + j + 1);
@@ -499,16 +491,15 @@ public class HandCalculatorUtils {
                 }
                 jokBo.add(currentCard);
                 if (j == 3) {
-                    value = j + 4;
                     jokBo.add(nextCard);
                 }
             }
 
             if (isStraightFlush) {
-                return STRAIGHT_FLUSH_VALUE_PREFIX + value + 1;
+                return STRAIGHT_FLUSH_VALUE_PREFIX + value;
             }
         }
-        return -1;
+        return -1L;
     }
 
     /**

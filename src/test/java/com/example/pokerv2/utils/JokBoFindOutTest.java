@@ -2,7 +2,6 @@ package com.example.pokerv2.utils;
 
 import com.example.pokerv2.dto.GameResultDto;
 import com.example.pokerv2.enums.HandValue;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,17 +9,16 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.*;
 
 @Slf4j
-class HandCalculatorUtilsTest {
+class JokBoFindOutTest {
 
     private static final int CARD_SIZE = 7;
 
     @Test
-    @DisplayName("로얄 스트레이트 플러시 검증 체크")
+    @DisplayName("로얄 스트레이트 플러시 검증 테스트")
     void evaluateRoyalStraightFlushTest() {
 
         //given
@@ -39,8 +37,6 @@ class HandCalculatorUtilsTest {
         cards.add(CardUtils.getCardValue("2","s"));
         cards.add(CardUtils.getCardValue("3","s"));
 
-
-
         //when
         GameResultDto gameResultDto = HandCalculatorUtils.calculateValue(cards);
         List<Integer> jokBo = gameResultDto.getJokBo();
@@ -48,14 +44,14 @@ class HandCalculatorUtilsTest {
 
         //then
         assertThat(HandCalculatorUtils.getHandContextByValue(gameResultDto.getHandValue())).isEqualTo(HandValue.ROYAL_STRAIGHT_FLUSH.getDetail());
-        assertThat(royalStraightFlushJokBo).isEqualTo(jokBo);
+        assertThat(jokBo).isEqualTo(royalStraightFlushJokBo);
 
         printTestDetails(cards, jokBo);
 
     }
 
     @Test
-    @DisplayName("스트레이트 플러시 검증 체크")
+    @DisplayName("스트레이트 플러시 검증 테스트")
     void evaluateStraightFlushTest() {
 
         //given
@@ -74,7 +70,6 @@ class HandCalculatorUtilsTest {
         cards.add(CardUtils.getCardValue("2","s"));
         cards.add(CardUtils.getCardValue("3","s"));
 
-
         //when
         GameResultDto gameResultDto = HandCalculatorUtils.calculateValue(cards);
         List<Integer> jokBo = gameResultDto.getJokBo();
@@ -82,13 +77,13 @@ class HandCalculatorUtilsTest {
 
         //then
         assertThat(HandCalculatorUtils.getHandContextByValue(gameResultDto.getHandValue())).isEqualTo(HandValue.STRAIGHT_FLUSH.getDetail());
-        assertThat(straightFlushJokBo).isEqualTo(jokBo);
+        assertThat(jokBo).isEqualTo(straightFlushJokBo);
 
         printTestDetails(cards, jokBo);
     }
 
     @Test
-    @DisplayName("포카드 검증 체크")
+    @DisplayName("포카드 검증 테스트")
     void evaluateFourOfAKindTest() {
 
         //given
@@ -114,14 +109,14 @@ class HandCalculatorUtilsTest {
 
         //then
         assertThat(HandCalculatorUtils.getHandContextByValue(gameResultDto.getHandValue())).isEqualTo(HandValue.FOUR_OF_A_KIND.getDetail());
-        assertThat(fourOfAKindJokBo).isEqualTo(jokBo);
+        assertThat(jokBo).isEqualTo(fourOfAKindJokBo);
 
         printTestDetails(cards, jokBo);
 
     }
 
     @Test
-    @DisplayName("풀하우스 검증 체크")
+    @DisplayName("풀하우스 검증 테스트")
     void evaluateFullHouseTest() {
 
         //given
@@ -147,13 +142,13 @@ class HandCalculatorUtilsTest {
 
         //then
         assertThat(HandCalculatorUtils.getHandContextByValue(gameResultDto.getHandValue())).isEqualTo(HandValue.FULL_HOUSE.getDetail());
-        assertThat(fullHouseJokBo).isEqualTo(jokBo);
+        assertThat(jokBo).isEqualTo(fullHouseJokBo);
 
         printTestDetails(cards, jokBo);
     }
 
     @Test
-    @DisplayName("플러시 검증 체크")
+    @DisplayName("플러시 검증 테스트")
     void evaluateFlushTest() {
 
         //given
@@ -179,13 +174,13 @@ class HandCalculatorUtilsTest {
 
         //then
         assertThat(HandCalculatorUtils.getHandContextByValue(gameResultDto.getHandValue())).isEqualTo(HandValue.FLUSH.getDetail());
-        assertThat(flushJokBo).isEqualTo(jokBo);
+        assertThat(jokBo).isEqualTo(flushJokBo);
 
         printTestDetails(cards, jokBo);
     }
 
     @Test
-    @DisplayName("스트레이트 검증 체크")
+    @DisplayName("스트레이트 검증 테스트")
     void evaluateStraightTest() {
 
         //given
@@ -217,7 +212,7 @@ class HandCalculatorUtilsTest {
     }
 
     @Test
-    @DisplayName("트리플 검증 체크")
+    @DisplayName("트리플 검증 테스트")
     void evaluateTripleTest() {
 
         //given
@@ -249,7 +244,7 @@ class HandCalculatorUtilsTest {
     }
 
     @Test
-    @DisplayName("투페어 검증 체크")
+    @DisplayName("투페어 검증 테스트")
     void evaluateTwoPairTest() {
 
         //given
@@ -281,7 +276,7 @@ class HandCalculatorUtilsTest {
     }
 
     @Test
-    @DisplayName("원페어 검증 체크")
+    @DisplayName("원페어 검증 테스트")
     void evaluateOnePairTest() {
 
         //given
@@ -313,7 +308,7 @@ class HandCalculatorUtilsTest {
     }
 
     @Test
-    @DisplayName("하이카드 검증 체크")
+    @DisplayName("하이카드 검증 테스트")
     void evaluateHighCardTest() {
 
         //given
@@ -344,7 +339,7 @@ class HandCalculatorUtilsTest {
         printTestDetails(cards, jokBo);
     }
 
-    public static void printTestDetails(List<Integer> cards, List<Integer> jokBo){
+    private static void printTestDetails(List<Integer> cards, List<Integer> jokBo){
         ArrayList<String> cardContexts = new ArrayList<>();
         for (Integer card : cards) {
             cardContexts.add(CardUtils.getCardContext(card));
@@ -358,7 +353,5 @@ class HandCalculatorUtilsTest {
         }
         log.info("\nJokBo List: {}", cardContexts);
     }
-
-
 
 }
