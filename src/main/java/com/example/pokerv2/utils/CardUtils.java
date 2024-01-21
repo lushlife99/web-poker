@@ -122,34 +122,48 @@ public class CardUtils {
         }
 
         int cardNumber;
-        if (cardRank.equals("2")) {
-            cardNumber = 0;
-        } else if (cardRank.equals("3")) {
-            cardNumber = 1;
-        } else if (cardRank.equals("4")) {
-            cardNumber = 2;
-        } else if (cardRank.equals("5")) {
-            cardNumber = 3;
-        } else if (cardRank.equals("6")) {
-            cardNumber = 4;
-        } else if (cardRank.equals("7")) {
-            cardNumber = 5;
-        } else if (cardRank.equals("8")) {
-            cardNumber = 6;
-        } else if (cardRank.equals("9")) {
-            cardNumber = 7;
-        } else if (cardRank.equals("10")) {
-            cardNumber = 8;
-        } else if (cardRank.equals("J")) {
-            cardNumber = 9;
-        } else if (cardRank.equals("Q")) {
-            cardNumber = 10;
-        } else if (cardRank.equals("K")) {
-            cardNumber = 11;
-        } else if (cardRank.equals("A")) {
-            cardNumber = 12;
-        } else {
-            throw new IllegalArgumentException("Invalid cardRank");
+        switch (cardRank) {
+            case "2":
+                cardNumber = 0;
+                break;
+            case "3":
+                cardNumber = 1;
+                break;
+            case "4":
+                cardNumber = 2;
+                break;
+            case "5":
+                cardNumber = 3;
+                break;
+            case "6":
+                cardNumber = 4;
+                break;
+            case "7":
+                cardNumber = 5;
+                break;
+            case "8":
+                cardNumber = 6;
+                break;
+            case "9":
+                cardNumber = 7;
+                break;
+            case "10":
+                cardNumber = 8;
+                break;
+            case "J":
+                cardNumber = 9;
+                break;
+            case "Q":
+                cardNumber = 10;
+                break;
+            case "K":
+                cardNumber = 11;
+                break;
+            case "A":
+                cardNumber = 12;
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid cardRank");
         }
 
         int cardSuitValue;
