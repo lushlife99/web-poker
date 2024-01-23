@@ -161,7 +161,7 @@ public class HandCalculatorUtils {
             }
         }
 
-        Collections.sort(cards, CardUtils.rankComparator());
+        cards.sort(CardUtils.rankComparator());
 
         int cnt = 0;
         if (pairRank != -1) {

@@ -41,4 +41,20 @@ public class PlayerDto {
         this.phaseCallSize = player.getPhaseCallSize();
     }
 
+    public PlayerDto(PlayerDto playerDto) {
+        this.id = playerDto.getId();
+        this.userId = playerDto.getUserId();
+        this.playerName = playerDto.getPlayerName();
+        this.boardId = playerDto.getBoardId();
+        this.position = playerDto.getPosition();
+        this.money = playerDto.getMoney();
+        this.card1 = playerDto.getCard1();
+        this.card2 = playerDto.getCard2();
+        this.status = playerDto.getStatus();
+        this.totalCallSize = playerDto.getTotalCallSize();
+        this.phaseCallSize = playerDto.getPhaseCallSize();
+
+        this.gameResult = playerDto.getGameResult();
+    }
+
 }
