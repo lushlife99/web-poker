@@ -128,5 +128,50 @@ class PotDistributorUtilsTest {
     @DisplayName("다수의 승자가 존재할 경우 사이드팟이 알맞게 분배되는지 테스트")
     void sidePot() {
 
+        //given
+        PlayerDto firstStrongestPlayer = boardDto.getPlayers().get(0);
+        PlayerDto secondStrongestPlayer = boardDto.getPlayers().get(1);
+        PlayerDto thirdStrongestPlayer = boardDto.getPlayers().get(2);
+        PlayerDto fourthStrongestPlayer = boardDto.getPlayers().get(3);
+        PlayerDto fifthStrongestPlayer = boardDto.getPlayers().get(4);
+        PlayerDto sixthStrongestPlayer = boardDto.getPlayers().get(5);
+
+        int standardCallSize = 1000;
+
+        firstStrongestPlayer.setTotalCallSize(standardCallSize);
+        secondStrongestPlayer.setTotalCallSize(standardCallSize * 2);
+        thirdStrongestPlayer.setTotalCallSize(standardCallSize * 3);
+        fourthStrongestPlayer.setTotalCallSize(standardCallSize * 4);
+        fifthStrongestPlayer.setTotalCallSize(standardCallSize * 5);
+        sixthStrongestPlayer.setTotalCallSize(standardCallSize * 5);
+        boardDto.setPot(standardCallSize * 20);
+
+        //when
+        PotDistributorUtils.distribute(boardDto);
+
+        //then
+        firstStrongestPlayer = boardDto.getPlayers().get(0);
+        assertThat(firstStrongestPlayer.getGameResult().isWinner()).isTrue();
+        assertThat(firstStrongestPlayer.getMoney()).isEqualTo(standardCallSize * 5);
+
+        secondStrongestPlayer = boardDto.getPlayers().get(1);
+        assertThat(secondStrongestPlayer.getGameResult().isWinner()).isTrue();
+        assertThat(secondStrongestPlayer.getMoney()).isEqualTo(standardCallSize * 4);
+
+        thirdStrongestPlayer = boardDto.getPlayers().get(2);
+        assertThat(thirdStrongestPlayer.getGameResult().isWinner()).isTrue();
+        assertThat(thirdStrongestPlayer.getMoney()).isEqualTo(standardCallSize * 3);
+
+        fourthStrongestPlayer = boardDto.getPlayers().get(3);
+        assertThat(fourthStrongestPlayer.getGameResult().isWinner()).isTrue();
+        assertThat(fourthStrongestPlayer.getMoney()).isEqualTo(standardCallSize * 2);
+
+        fifthStrongestPlayer = boardDto.getPlayers().get(4);
+        assertThat(fifthStrongestPlayer.getGameResult().isWinner()).isTrue();
+        assertThat(fifthStrongestPlayer.getMoney()).isEqualTo(standardCallSize * 1);
+
+        sixthStrongestPlayer = boardDto.getPlayers().get(5);
+        assertThat(sixthStrongestPlayer.getGameResult().isWinner()).isFalse();
+        assertThat(sixthStrongestPlayer.getMoney()).isEqualTo(0);
     }
 }
