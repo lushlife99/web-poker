@@ -32,16 +32,14 @@ public class StompErrorHandler extends StompSubProtocolErrorHandler {
             Message<byte[]> clientMessage,
             Throwable ex) {
 
-        System.out.println("StompErrorHandler.handleClientMessageProcessingError11111111111");
         Throwable exception = ex;
         if (exception instanceof MessageDeliveryException)
         {
             return errorMessage("UNAUTHORIZED", clientMessage);
         }
-        else if (exception instanceof CustomException) {
-            System.out.println("StompErrorHandler.handleClientMessageProcessingError");
-            return errorMessage(((CustomException) exception).getErrorCode().getDetail(), clientMessage);
-        }
+//        else if (exception instanceof CustomException) {
+//            return errorMessage(((CustomException) exception).getErrorCode().getDetail(), clientMessage);
+//        }
 
 
         return super.handleClientMessageProcessingError(clientMessage, ex);

@@ -77,6 +77,8 @@ public class BoardServiceV1 {
      * @param boardId
      * @return
      */
+
+    @Transactional
     public void endGameTest(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         board.setPhaseStatus(PhaseStatus.SHOWDOWN);
@@ -127,7 +129,7 @@ public class BoardServiceV1 {
     }
 
     @Transactional
-    private Board saveBoardChanges(BoardDto boardDto, Principal principal) {
+    public Board saveBoardChanges(BoardDto boardDto, Principal principal) {
 
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         if (!isSeatInBoard(board, principal.getName()))

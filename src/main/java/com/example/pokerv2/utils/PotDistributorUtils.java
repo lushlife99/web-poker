@@ -6,6 +6,7 @@ import com.example.pokerv2.dto.PlayerDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,9 +31,9 @@ public class PotDistributorUtils {
         List<PlayerDto> players = boardDto.getPlayers();
         List<PlayerDto> sortedPlayers = players.stream()
                 .sorted(HAND_VALUE_COMPARATOR.reversed())
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(ArrayList::new));
 
-        for(int i = 0; i < boardDto.getTotalPlayer(); i++) {
+        for(int i = 0; i < boardDto.getTotalPlayer()-1; i++) {
             PlayerDto winPlayer = sortedPlayers.get(i);
             int wpTotalCallSize = winPlayer.getTotalCallSize();
             for(int j = i+1; j < boardDto.getTotalPlayer(); j++) {

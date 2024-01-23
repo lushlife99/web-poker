@@ -17,6 +17,10 @@ class JokBoFindOutTest {
 
     private static final int CARD_SIZE = 7;
 
+    /**
+     * 백스트레이트 검증 로직도 짜야함.
+     */
+
     @Test
     @DisplayName("로얄 스트레이트 플러시 검증 테스트")
     void evaluateRoyalStraightFlushTest() {
