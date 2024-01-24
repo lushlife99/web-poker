@@ -9,6 +9,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
@@ -16,6 +17,11 @@ import java.security.Principal;
 public class BoardController {
 
     private final BoardServiceV1 boardServiceV1;
+
+    @GetMapping("/context")
+    public List<BoardDto> getContext(Principal principal) {
+        return boardServiceV1.getContext(principal);
+    }
 
     @PostMapping("/joinGame")
     public BoardDto joinGame(@RequestParam int bb, Principal principal) {

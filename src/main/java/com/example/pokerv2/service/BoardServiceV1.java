@@ -18,6 +18,7 @@ import com.example.pokerv2.repository.PlayerRepository;
 import com.example.pokerv2.repository.UserRepository;
 import com.example.pokerv2.utils.HandCalculatorUtils;
 import com.example.pokerv2.utils.PotDistributorUtils;
+import com.fasterxml.jackson.databind.JsonSerializable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -584,6 +585,17 @@ public class BoardServiceV1 {
             return new BoardDto(board);
 
         return null;
+    }
+
+    public List<BoardDto> getContext(Principal principal) {
+        User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        List<Player> playerList = user.getPlayerList();
+        List<BoardDto> context = new ArrayList<>();
+        for (Player player : playerList) {
+            context.add(new BoardDto(player.getBoard()));
+        }
+
+        return context;
     }
 
 
