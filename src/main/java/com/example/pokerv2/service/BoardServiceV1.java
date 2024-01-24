@@ -226,6 +226,10 @@ public class BoardServiceV1 {
         else {
             showDown(board);
         }
+
+        if(board.getTotalPlayer() >= 2) {
+            startGame(board.getId());
+        }
         boardRepository.save(board);
     }
 
