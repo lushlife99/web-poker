@@ -174,4 +174,51 @@ class PotDistributorUtilsTest {
         assertThat(sixthStrongestPlayer.getGameResult().isWinner()).isFalse();
         assertThat(sixthStrongestPlayer.getMoney()).isEqualTo(0);
     }
+
+    @Test
+    @DisplayName("비긴 플레이어가 존재할 경우 사이드팟이 알맞게 분배되는지 테스트")
+    void sidePotExistDrawPlayers() {
+
+        //given
+        PlayerDto firstStrongestDrawPlayer = boardDto.getPlayers().get(0);
+        PlayerDto secondStrongestDrawPlayer = boardDto.getPlayers().get(1);
+        PlayerDto thirdStrongestDrawPlayer = boardDto.getPlayers().get(2);
+        PlayerDto fourthStrongestPlayer = boardDto.getPlayers().get(3);
+        PlayerDto foldPlayer1 = boardDto.getPlayers().get(4);
+        PlayerDto foldPlayer2 = boardDto.getPlayers().get(5);
+
+        int callSizeStandard = 1000;
+
+        firstStrongestDrawPlayer.setTotalCallSize(callSizeStandard);
+        firstStrongestDrawPlayer.getGameResult().setHandValue(2);
+
+        secondStrongestDrawPlayer.setTotalCallSize(callSizeStandard * 2);
+        secondStrongestDrawPlayer.getGameResult().setHandValue(2);
+
+        thirdStrongestDrawPlayer.setTotalCallSize(callSizeStandard * 3);
+        thirdStrongestDrawPlayer.getGameResult().setHandValue(2);
+
+        fourthStrongestPlayer.setTotalCallSize(callSizeStandard * 10);
+        fourthStrongestPlayer.getGameResult().setHandValue(1);
+
+        foldPlayer1.setTotalCallSize(callSizeStandard * 5);
+        foldPlayer1.setStatus(PlayerStatus.FOLD.ordinal());
+        foldPlayer1.getGameResult().setHandValue(0);
+
+        foldPlayer2.setTotalCallSize(callSizeStandard * 9);
+        foldPlayer2.setStatus(PlayerStatus.FOLD.ordinal());
+        foldPlayer2.getGameResult().setHandValue(0);
+
+        boardDto.setPot(callSizeStandard * 30);
+
+        //when
+        PotDistributorUtils.distribute(boardDto);
+        for (PlayerDto player : boardDto.getPlayers()) {
+            System.out.println(player.getGameResult());
+        }
+        //then
+        PlayerDto winPlayer = boardDto.getPlayers().get(0);
+        assertThat(winPlayer.getGameResult().isWinner()).isTrue();
+        assertThat(winPlayer.getMoney()).isEqualTo(callSizeStandard * 3);
+    }
 }

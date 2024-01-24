@@ -16,6 +16,7 @@ public enum MessageType {
     NEXT_ACTION("NEXT_ACTION"),
     SHOW_DOWN("SHOW_DOWN"),
     PLAYER_EXIT("PLAYER_EXIT"),
+    INIT_BOARD("INIT_BOARD"),
 
     ;
 

@@ -3,7 +3,6 @@ package com.example.pokerv2.utils;
 
 import com.example.pokerv2.dto.GameResultDto;
 import com.example.pokerv2.enums.HandValue;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -82,8 +81,10 @@ public class HandCalculatorUtils {
             }
         }
 
-        return GameResultDto.builder().handValue(handValue).jokBo(jokBoList).build();
+        return GameResultDto.builder().handValue(handValue).jokBo(jokBoList).handContext(getHandContextByValue(handValue)).build();
     }
+
+
 
     public static String getHandContextByValue(long value) {
         String handContext;
@@ -327,7 +328,7 @@ public class HandCalculatorUtils {
         }
 
         // Check BackStraight
-        if (consecutiveCount == 3 && cards.get(cards.size() - 1) % 13 == 0) {
+        if (consecutiveCount == 3 && cards.get(cards.size() - 1) % 13 == 0 && cards.get(0) % 13 == 12) {
             jokBo.add(cards.get(0));
             return STRAIGHT_VALUE_PREFIX + 4;
         }
@@ -373,7 +374,6 @@ public class HandCalculatorUtils {
 
         if (highestRank != -1) {
             jokBo.sort(CardUtils.rankComparator());
-
 
             long flushValue = 0L;
             long valuePrefix = 100000000L;
@@ -490,7 +490,6 @@ public class HandCalculatorUtils {
      */
     private static long evaluateStraightFlush(List<Integer> cards, List<Integer> jokBo) {
         cards.sort(Comparator.reverseOrder());
-        CardUtils.decodeCardList(cards);
 
         int value;
         for (int i = 0; i <= cards.size() - 5; i++) {

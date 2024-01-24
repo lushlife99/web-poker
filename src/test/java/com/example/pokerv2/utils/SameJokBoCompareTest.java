@@ -738,6 +738,7 @@ public class SameJokBoCompareTest {
         List<Integer> losePlayerJokBo = losePlayerGameResult.getJokBo();
         Collections.sort(losePlayerJokBo);
 
+
         //then
         assertThat(winPlayerGameResult.getHandValue() / JOKBO_DIVIDE_CONSTANT)
                 .isEqualTo(losePlayerGameResult.getHandValue() / JOKBO_DIVIDE_CONSTANT);

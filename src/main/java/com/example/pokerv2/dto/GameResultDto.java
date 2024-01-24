@@ -1,5 +1,6 @@
 package com.example.pokerv2.dto;
 
+import com.example.pokerv2.enums.HandValue;
 import lombok.*;
 
 import java.util.List;
@@ -30,6 +31,7 @@ public class GameResultDto {
 
     private boolean isWinner;
     private int earnedMoney;
+    private String handContext;
     private long handValue;
     private List<Integer> jokBo;
 
