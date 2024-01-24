@@ -218,6 +218,7 @@ public class BoardServiceV1 {
                 foldCount++;
             }
         }
+        System.out.println(LocalDateTime.now());
 
         if(foldCount == board.getTotalPlayer() - 1){
             winOnePlayer(board);
@@ -226,6 +227,7 @@ public class BoardServiceV1 {
         else {
             showDown(board);
         }
+        System.out.println(LocalDateTime.now());
 
         if(board.getTotalPlayer() >= 2) {
             startGame(board.getId());
@@ -622,7 +624,7 @@ public class BoardServiceV1 {
     }
 
     @Transactional
-    private boolean isSeatInBoard(Board board, String userId) {
+    public boolean isSeatInBoard(Board board, String userId) {
         List<Player> players = board.getPlayers();
         for (Player player : players) {
             if (player.getUser().getUserId().equals(userId))
