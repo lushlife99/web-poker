@@ -55,8 +55,8 @@ class JokBoFindOutTest {
     }
 
     @Test
-    @DisplayName("스트레이트 플러시 검증 테스트")
-    void evaluateStraightFlushTest() {
+    @DisplayName("스트레이트 플러시 검증 테스트 1. 일반")
+    void evaluateStraightFlushTest1() {
 
         //given
         ArrayList<Integer> straightFlushJokBo = new ArrayList<>(List.of(
@@ -85,6 +85,103 @@ class JokBoFindOutTest {
 
         printTestDetails(cards, jokBo);
     }
+
+    @Test
+    @DisplayName("스트레이트 플러시 검증 테스트 2. 스트레이트를 이루는 카드 중 원페어가 포함되어 있을 때")
+    void evaluateStraightFlushTest2() {
+
+        //given
+        ArrayList<Integer> straightFlushJokBo = new ArrayList<>(List.of(
+                CardUtils.getCardValue("10","d"),
+                CardUtils.getCardValue("9","d"),
+                CardUtils.getCardValue("8","d"),
+                CardUtils.getCardValue("7","d"),
+                CardUtils.getCardValue("6","d")
+        ));
+        ArrayList<Integer> cards = new ArrayList<>(CARD_SIZE);
+
+        Collections.sort(straightFlushJokBo);
+        cards.addAll(straightFlushJokBo);
+
+        cards.add(CardUtils.getCardValue("9","s"));
+        cards.add(CardUtils.getCardValue("3","s"));
+
+        //when
+        GameResultDto gameResultDto = HandCalculatorUtils.calculateValue(cards);
+        List<Integer> jokBo = gameResultDto.getJokBo();
+        Collections.sort(jokBo);
+
+        //then
+        assertThat(HandCalculatorUtils.getHandContextByValue(gameResultDto.getHandValue())).isEqualTo(HandValue.STRAIGHT_FLUSH.getDetail());
+        assertThat(jokBo).isEqualTo(straightFlushJokBo);
+
+        printTestDetails(cards, jokBo);
+    }
+
+    @Test
+    @DisplayName("스트레이트 플러시 검증 테스트 3. 스트레이트를 이루는 카드 중 투페어가 포함되어 있을 때")
+    void evaluateStraightFlushTest3() {
+
+        //given
+        ArrayList<Integer> straightFlushJokBo = new ArrayList<>(List.of(
+                CardUtils.getCardValue("10","d"),
+                CardUtils.getCardValue("9","d"),
+                CardUtils.getCardValue("8","d"),
+                CardUtils.getCardValue("7","d"),
+                CardUtils.getCardValue("6","d")
+        ));
+        ArrayList<Integer> cards = new ArrayList<>(CARD_SIZE);
+
+        Collections.sort(straightFlushJokBo);
+        cards.addAll(straightFlushJokBo);
+
+        cards.add(CardUtils.getCardValue("8","s"));
+        cards.add(CardUtils.getCardValue("7","s"));
+
+        //when
+        GameResultDto gameResultDto = HandCalculatorUtils.calculateValue(cards);
+        List<Integer> jokBo = gameResultDto.getJokBo();
+        Collections.sort(jokBo);
+
+        //then
+        assertThat(HandCalculatorUtils.getHandContextByValue(gameResultDto.getHandValue())).isEqualTo(HandValue.STRAIGHT_FLUSH.getDetail());
+        assertThat(jokBo).isEqualTo(straightFlushJokBo);
+
+        printTestDetails(cards, jokBo);
+    }
+    
+    @Test
+    @DisplayName("백 스트레이트 플러시 검증 테스트")
+    void evaluateBackStraightFlushTest() {
+
+        //given
+        ArrayList<Integer> straightFlushJokBo = new ArrayList<>(List.of(
+                CardUtils.getCardValue("A","d"),
+                CardUtils.getCardValue("3","d"),
+                CardUtils.getCardValue("2","d"),
+                CardUtils.getCardValue("4","d"),
+                CardUtils.getCardValue("5","d")
+        ));
+        ArrayList<Integer> cards = new ArrayList<>(CARD_SIZE);
+
+        Collections.sort(straightFlushJokBo);
+        cards.addAll(straightFlushJokBo);
+
+        cards.add(CardUtils.getCardValue("7","s"));
+        cards.add(CardUtils.getCardValue("8","s"));
+
+        //when
+        GameResultDto gameResultDto = HandCalculatorUtils.calculateValue(cards);
+        List<Integer> jokBo = gameResultDto.getJokBo();
+        Collections.sort(jokBo);
+
+        //then
+        assertThat(HandCalculatorUtils.getHandContextByValue(gameResultDto.getHandValue())).isEqualTo(HandValue.STRAIGHT_FLUSH.getDetail());
+        assertThat(jokBo).isEqualTo(straightFlushJokBo);
+
+        printTestDetails(cards, jokBo);
+    }
+
 
     @Test
     @DisplayName("포카드 검증 테스트")
@@ -184,7 +281,7 @@ class JokBoFindOutTest {
     }
 
     @Test
-    @DisplayName("스트레이트 검증 테스트")
+    @DisplayName("스트레이트 검증 테스트. 1. 일반 스트레이트 일 때")
     void evaluateStraightTest() {
 
         //given
@@ -200,8 +297,106 @@ class JokBoFindOutTest {
         Collections.sort(straightJokBo);
         cards.addAll(straightJokBo);
 
-        cards.add(CardUtils.getCardValue("2", "s"));
-        cards.add(CardUtils.getCardValue("3", "s"));
+        cards.add(CardUtils.getCardValue("A", "s"));
+        cards.add(CardUtils.getCardValue("K", "s"));
+
+        //when
+        GameResultDto gameResultDto = HandCalculatorUtils.calculateValue(cards);
+        List<Integer> jokBo = gameResultDto.getJokBo();
+        Collections.sort(jokBo);
+
+        //then
+        assertThat(HandCalculatorUtils.getHandContextByValue(gameResultDto.getHandValue())).isEqualTo(HandValue.STRAIGHT.getDetail());
+        assertThat(jokBo).isEqualTo(straightJokBo);
+
+        printTestDetails(cards, jokBo);
+    }
+
+    @Test
+    @DisplayName("스트레이트 검증 테스트. 2. 원페어가 포함된 스트레이트 일 때")
+    void evaluateStraightTest2() {
+
+        //given
+        ArrayList<Integer> straightJokBo = new ArrayList<>(List.of(
+                CardUtils.getCardValue("10", "d"),
+                CardUtils.getCardValue("9", "h"),
+                CardUtils.getCardValue("8", "s"),
+                CardUtils.getCardValue("7", "c"),
+                CardUtils.getCardValue("6", "d")
+        ));
+        ArrayList<Integer> cards = new ArrayList<>(CARD_SIZE);
+
+        Collections.sort(straightJokBo);
+        cards.addAll(straightJokBo);
+
+        cards.add(CardUtils.getCardValue("9", "s"));
+        cards.add(CardUtils.getCardValue("K", "s"));
+
+        //when
+        GameResultDto gameResultDto = HandCalculatorUtils.calculateValue(cards);
+        List<Integer> jokBo = gameResultDto.getJokBo();
+        Collections.sort(jokBo);
+
+        //then
+        assertThat(HandCalculatorUtils.getHandContextByValue(gameResultDto.getHandValue())).isEqualTo(HandValue.STRAIGHT.getDetail());
+        assertThat(jokBo).isEqualTo(straightJokBo);
+
+        printTestDetails(cards, jokBo);
+    }
+
+
+
+    @Test
+    @DisplayName("스트레이트 검증 테스트. 3. 투페어가 포함된 스트레이트 일 때")
+    void evaluateStraightTest3() {
+
+        //given
+        ArrayList<Integer> straightJokBo = new ArrayList<>(List.of(
+                CardUtils.getCardValue("10", "d"),
+                CardUtils.getCardValue("9", "h"),
+                CardUtils.getCardValue("8", "s"),
+                CardUtils.getCardValue("7", "c"),
+                CardUtils.getCardValue("6", "d")
+        ));
+        ArrayList<Integer> cards = new ArrayList<>(CARD_SIZE);
+
+        Collections.sort(straightJokBo);
+        cards.addAll(straightJokBo);
+
+        cards.add(CardUtils.getCardValue("9", "s"));
+        cards.add(CardUtils.getCardValue("10", "s"));
+
+        //when
+        GameResultDto gameResultDto = HandCalculatorUtils.calculateValue(cards);
+        List<Integer> jokBo = gameResultDto.getJokBo();
+        Collections.sort(jokBo);
+
+        //then
+        assertThat(HandCalculatorUtils.getHandContextByValue(gameResultDto.getHandValue())).isEqualTo(HandValue.STRAIGHT.getDetail());
+        assertThat(jokBo).isEqualTo(straightJokBo);
+
+        printTestDetails(cards, jokBo);
+    }
+
+    @Test
+    @DisplayName("백 스트레이트 검증 테스트")
+    void evaluateBackStraightTest() {
+
+        //given
+        ArrayList<Integer> straightJokBo = new ArrayList<>(List.of(
+                CardUtils.getCardValue("A", "d"),
+                CardUtils.getCardValue("2", "h"),
+                CardUtils.getCardValue("4", "s"),
+                CardUtils.getCardValue("3", "c"),
+                CardUtils.getCardValue("5", "d")
+        ));
+        ArrayList<Integer> cards = new ArrayList<>(CARD_SIZE);
+
+        Collections.sort(straightJokBo);
+        cards.addAll(straightJokBo);
+
+        cards.add(CardUtils.getCardValue("8", "s"));
+        cards.add(CardUtils.getCardValue("9", "s"));
 
         //when
         GameResultDto gameResultDto = HandCalculatorUtils.calculateValue(cards);

@@ -3,6 +3,7 @@ package com.example.pokerv2.utils;
 
 import com.example.pokerv2.dto.GameResultDto;
 import com.example.pokerv2.enums.HandValue;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +24,6 @@ public class HandCalculatorUtils {
     private static final long ONE_PAIR_VALUE_PREFIX = 10000000000L;
 
 
-
     /**
      * 24/01/15 chan
      * <p>
@@ -31,16 +31,17 @@ public class HandCalculatorUtils {
      * 계산한 핸드의 세기와, 족보를 이루는 카드리스트들을 GameResultDto에 담아준다.
      *
      * <p>
-
+     *
      * <p>
      * 함수가 너무 긺. 나중에 리팩토링 하기.
      */
 
     private HandCalculatorUtils() {
     }
+
     public static GameResultDto calculateValue(List<Integer> cards) {
         List<Integer> jokBoList = new ArrayList<>();
-        cards.sort(Collections.reverseOrder());
+        cards.sort(CardUtils.rankComparator());
         long handValue;
 
         handValue = evaluateRoyalStraightFlush(cards, jokBoList);
@@ -84,25 +85,25 @@ public class HandCalculatorUtils {
         return GameResultDto.builder().handValue(handValue).jokBo(jokBoList).build();
     }
 
-    public static String getHandContextByValue(long value){
+    public static String getHandContextByValue(long value) {
         String handContext;
-        if(value == ROYAL_FLUSH_VALUE_PREFIX){
+        if (value == ROYAL_FLUSH_VALUE_PREFIX) {
             handContext = HandValue.ROYAL_STRAIGHT_FLUSH.getDetail();
-        } else if(value >= STRAIGHT_FLUSH_VALUE_PREFIX) {
+        } else if (value >= STRAIGHT_FLUSH_VALUE_PREFIX) {
             handContext = HandValue.STRAIGHT_FLUSH.getDetail();
-        } else if(value >= FOUR_OF_A_KIND_VALUE_PREFIX) {
+        } else if (value >= FOUR_OF_A_KIND_VALUE_PREFIX) {
             handContext = HandValue.FOUR_OF_A_KIND.getDetail();
-        } else if(value >= FULL_HOUSE_VALUE_PREFIX) {
+        } else if (value >= FULL_HOUSE_VALUE_PREFIX) {
             handContext = HandValue.FULL_HOUSE.getDetail();
-        } else if(value >= FLUSH_VALUE_PREFIX) {
+        } else if (value >= FLUSH_VALUE_PREFIX) {
             handContext = HandValue.FLUSH.getDetail();
-        } else if(value >= STRAIGHT_VALUE_PREFIX){
+        } else if (value >= STRAIGHT_VALUE_PREFIX) {
             handContext = HandValue.STRAIGHT.getDetail();
-        } else if(value >= THREE_OF_A_KIND_VALUE_PREFIX){
+        } else if (value >= THREE_OF_A_KIND_VALUE_PREFIX) {
             handContext = HandValue.THREE_OF_A_KIND.getDetail();
-        } else if(value >= TWO_PAIR_VALUE_PREFIX) {
+        } else if (value >= TWO_PAIR_VALUE_PREFIX) {
             handContext = HandValue.TWO_PAIR.getDetail();
-        } else if(value >= ONE_PAIR_VALUE_PREFIX) {
+        } else if (value >= ONE_PAIR_VALUE_PREFIX) {
             handContext = HandValue.ONE_PAIR.getDetail();
         } else {
             handContext = HandValue.HIGH_CARD.getDetail();
@@ -212,7 +213,7 @@ public class HandCalculatorUtils {
                 if (rank == firstPairRank || rank == secondPairRank) {
                     jokBo.add(card);
                 } else {
-                    if(highCard % 13 < rank){
+                    if (highCard % 13 < rank) {
                         highCard = card;
                     }
                 }
@@ -258,11 +259,10 @@ public class HandCalculatorUtils {
         }
 
 
-
         if (isThreeOfAKind) {
-            for(Integer card : cards) {
+            for (Integer card : cards) {
                 int rank = card % 13;
-                if(rank != tripleRank) {
+                if (rank != tripleRank) {
                     if (secondHighCard % 13 < rank) {
                         if (firstHighCard % 13 < rank) {
                             secondHighCard = firstHighCard;
@@ -286,37 +286,52 @@ public class HandCalculatorUtils {
     /**
      * straightValue
      *
-     * @param cards 내림차 순으로 정렬된 카드 리스트.
+     * @param cards rank 내림차 순으로 정렬된 7장의 카드 리스트.
      * @param jokBo 만약 조건이 만족할 경우 족보를 이루는 5개의 카드를 담아줌.
      * @return 스트레이트의 밸류 (스트레이트를 이루는 족보중 하이카드)
      */
     private static long evaluateStraight(List<Integer> cards, List<Integer> jokBo) {
         cards.sort(CardUtils.rankComparator());
-        for (int i = 0; i <= cards.size() - 5; i++) {
-            boolean isStraight = true;
-            int value = -1;
 
-            for (int j = 0; j < 4; j++) {
-                int currentCard = cards.get(i + j);
-                int nextCard = cards.get(i + j + 1);
+        int lastValue = -1;
+        int consecutiveCount = 0;
+        int topidx = 0;
 
-                if ((currentCard % 13) - 1 != nextCard % 13) {
-                    jokBo.clear();
-                    isStraight = false;
-                    value = -1;
-                    break;
-                }
+        for (int i = 0; i < cards.size(); i++) {
+            int currentCard = cards.get(i);
+            int currentValue = currentCard % 13;
+
+            if (lastValue == -1 || lastValue % 13 == currentValue) {
+                lastValue = currentValue;
+                continue;
+            }
+
+            if (lastValue - 1 == currentValue) {
+                consecutiveCount++;
                 jokBo.add(currentCard);
-                if (j == 3) {
-                    value = nextCard % 13;
-                    jokBo.add(nextCard);
+
+                if (consecutiveCount == 4) {
+                    if(jokBo.size() != 5) {
+                        jokBo.add(cards.get(topidx));
+                    }
+                    return STRAIGHT_VALUE_PREFIX + lastValue + 1;
                 }
+            } else {
+                consecutiveCount = 0;
+                topidx = i + 1;
+                jokBo.clear();
+                jokBo.add(currentCard);
             }
 
-            if (isStraight) {
-                return STRAIGHT_VALUE_PREFIX + value + 1;
-            }
+            lastValue = currentValue;
         }
+
+        // Check BackStraight
+        if (consecutiveCount == 3 && cards.get(cards.size() - 1) % 13 == 0) {
+            jokBo.add(cards.get(0));
+            return STRAIGHT_VALUE_PREFIX + 4;
+        }
+
         return -1;
     }
 
@@ -330,6 +345,8 @@ public class HandCalculatorUtils {
      */
 
     private static long evaluateFlush(List<Integer> cards, List<Integer> jokBo) {
+        cards.sort(Comparator.reverseOrder());
+
         int consecutiveCount = 1;
         int lastSuit = -1;
         int highestRank = -1;
@@ -416,8 +433,7 @@ public class HandCalculatorUtils {
                 int rank = card % 13;
                 if (rank == twoOfKindValue) {
                     jokBo.add(card);
-                    if (jokBo.size() == 5)
-                        break;
+                    if (jokBo.size() == 5) break;
                 }
             }
             return FULL_HOUSE_VALUE_PREFIX + (threeOfKindValue + 1) * 100 + twoOfKindValue + 1;
@@ -458,7 +474,7 @@ public class HandCalculatorUtils {
                 }
 
                 jokBo.add(highCard);
-                return FOUR_OF_A_KIND_VALUE_PREFIX + (fourAKindValue + 1) * 100 + highCard % 13  + 1;
+                return FOUR_OF_A_KIND_VALUE_PREFIX + (fourAKindValue + 1) * 100 + highCard % 13 + 1;
             }
         }
 
@@ -473,12 +489,14 @@ public class HandCalculatorUtils {
      * @return 스트레이트 플러시의 밸류. (스티플의 하이카드)
      */
     private static long evaluateStraightFlush(List<Integer> cards, List<Integer> jokBo) {
+        cards.sort(Comparator.reverseOrder());
+        CardUtils.decodeCardList(cards);
 
         int value;
-
         for (int i = 0; i <= cards.size() - 5; i++) {
             boolean isStraightFlush = true;
             value = cards.get(i) % 13;
+            int consecutiveCount = 0;
             for (int j = 0; j < 4; j++) {
                 int currentCard = cards.get(i + j);
                 int nextCard = cards.get(i + j + 1);
@@ -487,13 +505,25 @@ public class HandCalculatorUtils {
                     jokBo.clear();
                     isStraightFlush = false;
                     value = -1;
+                    consecutiveCount = 0;
                     break;
                 }
+                consecutiveCount++;
                 jokBo.add(currentCard);
                 if (j == 3) {
                     jokBo.add(nextCard);
                 }
+
+                if(consecutiveCount == 3 && nextCard % 13 == 0){
+                    if(cards.contains((nextCard / 13) * 13 + 12)){
+                        jokBo.add(nextCard);
+                        jokBo.add((nextCard / 13) * 13 + 12);
+                        return STRAIGHT_FLUSH_VALUE_PREFIX + 4;
+                    }
+                }
             }
+
+
 
             if (isStraightFlush) {
                 return STRAIGHT_FLUSH_VALUE_PREFIX + value;
@@ -517,7 +547,7 @@ public class HandCalculatorUtils {
                 int currentCard = cards.get(i + j);
                 int nextCard = cards.get(i + j + 1);
 
-                if ( currentCard % 13 != 13 - 1 - j || (nextCard % 13 + 1) % 13 != currentCard % 13 || currentCard / 13 != nextCard / 13) {
+                if (currentCard % 13 != 13 - 1 - j || (nextCard % 13 + 1) % 13 != currentCard % 13 || currentCard / 13 != nextCard / 13) {
                     isRoyalFlush = false;
                     break;
                 }

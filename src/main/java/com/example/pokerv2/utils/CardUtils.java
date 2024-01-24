@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 
@@ -35,6 +36,13 @@ public class CardUtils {
                 return o2 % 13 - o1 % 13;
             }
         };
+    }
+
+    public static void decodeCardList(List<Integer> cards) {
+        for (Integer card : cards) {
+            System.out.print(getCardContext(card) + " ");
+        }
+        System.out.println();
     }
 
     public static String getCardContext(int cardValue) {
