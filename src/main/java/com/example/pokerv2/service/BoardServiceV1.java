@@ -240,7 +240,7 @@ public class BoardServiceV1 {
         boardRepository.save(board);
     }
 
-    private static void initBoard(Board board) {
+    private void initBoard(Board board) {
         board.setPot(0);
         board.setBettingSize(0);
         board.setBettingPos(0);
@@ -258,6 +258,8 @@ public class BoardServiceV1 {
             player.setPhaseCallSize(0);
             player.setStatus(PlayerStatus.FOLD);
         }
+        boardRepository.save(board);
+        simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.INIT_BOARD.getDetail(), new BoardDto(board)));
     }
 
     @Transactional
