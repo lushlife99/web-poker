@@ -39,10 +39,12 @@ public class CardUtils {
     }
 
     public static void decodeCardList(List<Integer> cards) {
+        String s = "";
         for (Integer card : cards) {
-            System.out.print(getCardContext(card) + " ");
+            s += getCardContext(card) + " ";
+
         }
-        System.out.println();
+        log.info("cardList info = {}", s);
     }
 
     public static String getCardContext(int cardValue) {

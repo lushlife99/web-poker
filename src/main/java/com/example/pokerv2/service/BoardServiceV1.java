@@ -156,12 +156,24 @@ public class BoardServiceV1 {
         List<Player> players = board.getPlayers();
         int actionPos = board.getActionPos();
         int actionPlayerIdx = 0;
+        int actionableCount = 0;
 
         for (int i = 0; i < players.size(); i++) {
             Player player = players.get(i);
             if (player.getPosition().getPosNum() == actionPos) {
                 actionPlayerIdx = i;
             }
+        }
+
+        for(int i = 0; i < board.getTotalPlayer(); i++) {
+            Player player = players.get(i);
+            if(player.getStatus() == PlayerStatus.PLAY){
+                actionableCount++;
+            }
+        }
+
+        if(actionableCount < 2) {
+            return false;
         }
 
         for (int i = 1; i <= board.getTotalPlayer(); i++) {
