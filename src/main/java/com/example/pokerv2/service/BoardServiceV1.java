@@ -18,7 +18,6 @@ import com.example.pokerv2.repository.PlayerRepository;
 import com.example.pokerv2.repository.UserRepository;
 import com.example.pokerv2.utils.HandCalculatorUtils;
 import com.example.pokerv2.utils.PotDistributorUtils;
-import com.fasterxml.jackson.databind.JsonSerializable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -558,8 +557,6 @@ public class BoardServiceV1 {
     }
 
     private void setFirstActionPos(Board board) {
-
-        List<Player> players = board.getPlayers();
 
         if (board.getTotalPlayer() == 2) {
             board.setActionPos(board.getBtn());

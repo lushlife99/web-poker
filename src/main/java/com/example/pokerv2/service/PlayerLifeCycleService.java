@@ -24,7 +24,6 @@ public class PlayerLifeCycleService {
 
     private final UserRepository userRepository;
     private final PlayerRepository playerRepository;
-    private final BoardServiceV1 boardServiceV1;
 
     @Transactional
     public void setDisconnect(Principal principal) {
@@ -34,7 +33,7 @@ public class PlayerLifeCycleService {
             List<Player> playerList = user.getPlayerList();
             for (Player player : playerList) {
                 if(player.getStatus() == PlayerStatus.FOLD) {
-                    boardServiceV1.sitOut(new BoardDto(player.getBoard()), principal);
+                    player.setStatus(PlayerStatus.DISCONNECT_FOLD);
                 }
                 else if(player.getStatus() == PlayerStatus.PLAY) {
                     player.setStatus(PlayerStatus.DISCONNECT_PLAYED);
