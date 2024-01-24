@@ -192,10 +192,10 @@ class PotDistributorUtilsTest {
         firstStrongestDrawPlayer.setTotalCallSize(callSizeStandard);
         firstStrongestDrawPlayer.getGameResult().setHandValue(2);
 
-        secondStrongestDrawPlayer.setTotalCallSize(callSizeStandard * 2);
+        secondStrongestDrawPlayer.setTotalCallSize(callSizeStandard * 3);
         secondStrongestDrawPlayer.getGameResult().setHandValue(2);
 
-        thirdStrongestDrawPlayer.setTotalCallSize(callSizeStandard * 3);
+        thirdStrongestDrawPlayer.setTotalCallSize(callSizeStandard * 5);
         thirdStrongestDrawPlayer.getGameResult().setHandValue(2);
 
         fourthStrongestPlayer.setTotalCallSize(callSizeStandard * 10);
@@ -205,11 +205,11 @@ class PotDistributorUtilsTest {
         foldPlayer1.setStatus(PlayerStatus.FOLD.ordinal());
         foldPlayer1.getGameResult().setHandValue(0);
 
-        foldPlayer2.setTotalCallSize(callSizeStandard * 9);
+        foldPlayer2.setTotalCallSize(callSizeStandard * 8);
         foldPlayer2.setStatus(PlayerStatus.FOLD.ordinal());
         foldPlayer2.getGameResult().setHandValue(0);
 
-        boardDto.setPot(callSizeStandard * 30);
+        boardDto.setPot(callSizeStandard * 33);
 
         //when
         PotDistributorUtils.distribute(boardDto);
@@ -220,5 +220,14 @@ class PotDistributorUtilsTest {
         PlayerDto winPlayer = boardDto.getPlayers().get(0);
         assertThat(winPlayer.getGameResult().isWinner()).isTrue();
         assertThat(winPlayer.getMoney()).isEqualTo(callSizeStandard * 3);
+
+        PlayerDto winPlayer2 = boardDto.getPlayers().get(1);
+        assertThat(winPlayer2.getGameResult().isWinner()).isTrue();
+        assertThat(winPlayer2.getMoney()).isEqualTo(callSizeStandard * 8);
+
+        PlayerDto winPlayer3 = boardDto.getPlayers().get(2);
+        assertThat(winPlayer3.getGameResult().isWinner()).isTrue();
+        assertThat(winPlayer3.getMoney()).isEqualTo(callSizeStandard * 11);
+
     }
 }
