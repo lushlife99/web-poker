@@ -74,6 +74,7 @@ public class BoardServiceV1 {
 
     /**
      * 테스트 끝나고 삭제
+     *
      * @param boardId
      * @return
      */
@@ -88,7 +89,7 @@ public class BoardServiceV1 {
 
     /**
      * 24/01/10 chan
-     *
+     * <p>
      * 액션을 받을 때 고려해야 할 것
      * 1. 플레이어들의 액션이 다 끝났는가? true -> 다음 페이즈. false -> 다음 액션 순서 정해주기
      * 플레이어들의 액션이 다 끝났는지 어떻게 알 수 있을까?
@@ -147,8 +148,7 @@ public class BoardServiceV1 {
      * setNextActionPos
      *
      * @param board
-     * @return
-     * 다음 액션 순서가 존재한다면 actionPos를 알맞게 지정해주고 return true
+     * @return 다음 액션 순서가 존재한다면 actionPos를 알맞게 지정해주고 return true
      * 존재하지 않다면 return false
      */
     private boolean setNextActionPos(Board board) {
@@ -165,14 +165,14 @@ public class BoardServiceV1 {
             }
         }
 
-        for(int i = 0; i < board.getTotalPlayer(); i++) {
+        for (int i = 0; i < board.getTotalPlayer(); i++) {
             Player player = players.get(i);
-            if(player.getStatus() == PlayerStatus.PLAY){
+            if (player.getStatus() == PlayerStatus.PLAY) {
                 actionableCount++;
             }
         }
 
-        if(actionableCount < 2) {
+        if (actionableCount < 2) {
             return false;
         }
 
@@ -187,7 +187,7 @@ public class BoardServiceV1 {
                     return true;
                 } else {
                     nextPhase(board);
-                    if(board.getPhaseStatus() != PhaseStatus.SHOWDOWN) {
+                    if (board.getPhaseStatus() != PhaseStatus.SHOWDOWN) {
                         simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), new BoardDto(board)));
                         return true;
                     } else {
@@ -201,10 +201,11 @@ public class BoardServiceV1 {
 
     /**
      * endGame
-     *
+     * <p>
      * 게임을 종료시킨다.
      * 1. if 한명 빼고 다 폴드 -> 남은 플레이어 승리
      * 2. fold하지 않은 플레이어가 두명 이상 -> 쇼다운
+     *
      * @param board
      */
     public void endGame(Board board) {
@@ -214,25 +215,49 @@ public class BoardServiceV1 {
         List<Player> players = board.getPlayers();
         int foldCount = 0;
         for (Player player : players) {
-            if(player.getStatus() == PlayerStatus.FOLD){
+            if (player.getStatus() == PlayerStatus.FOLD) {
                 foldCount++;
             }
         }
-        System.out.println(LocalDateTime.now());
 
-        if(foldCount == board.getTotalPlayer() - 1){
+        if (foldCount == board.getTotalPlayer() - 1) {
             winOnePlayer(board);
-        }
-
-        else {
+        } else {
             showDown(board);
         }
-        System.out.println(LocalDateTime.now());
 
-        if(board.getTotalPlayer() >= 2) {
+        initBoard(board);
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.getStackTrace();
+        }
+
+        if (board.getTotalPlayer() >= 2) {
             startGame(board.getId());
         }
         boardRepository.save(board);
+    }
+
+    private static void initBoard(Board board) {
+        board.setPot(0);
+        board.setBettingSize(0);
+        board.setBettingPos(0);
+        board.setActionPos(0);
+        board.setPhaseStatus(PhaseStatus.WAITING);
+        board.setCommunityCard1(0);
+        board.setCommunityCard2(0);
+        board.setCommunityCard3(0);
+        board.setCommunityCard4(0);
+        board.setCommunityCard5(0);
+        for (Player player : board.getPlayers()) {
+            player.setCard1(0);
+            player.setCard2(0);
+            player.setTotalCallSize(0);
+            player.setPhaseCallSize(0);
+            player.setStatus(PlayerStatus.FOLD);
+        }
     }
 
     @Transactional
@@ -243,11 +268,11 @@ public class BoardServiceV1 {
         List<Player> players = board.getPlayers();
 
 
-        for(int i = bettingPlayerIdx + 1; i < bettingPlayerIdx + 1 + board.getTotalPlayer(); i++) {
+        for (int i = bettingPlayerIdx + 1; i < bettingPlayerIdx + 1 + board.getTotalPlayer(); i++) {
             Player player = players.get(i % board.getTotalPlayer());
-            if(player.getPhaseCallSize() == bettingSize)
+            if (player.getPhaseCallSize() == bettingSize)
                 return;
-            else if(maxCallSize < player.getPhaseCallSize()) {
+            else if (maxCallSize < player.getPhaseCallSize()) {
                 maxCallSize = player.getPhaseCallSize();
             }
         }
@@ -260,10 +285,10 @@ public class BoardServiceV1 {
     public BoardDto winOnePlayer(Board board) {
         List<Player> players = board.getPlayers();
         BoardDto boardDto = new BoardDto(board);
-        for(int i = 0; i < players.size(); i++){
+        for (int i = 0; i < players.size(); i++) {
             Player player = players.get(i);
             PlayerDto playerDto = boardDto.getPlayers().get(i);
-            if(player.getStatus() == PlayerStatus.PLAY || player.getStatus() == PlayerStatus.ALL_IN){
+            if (player.getStatus() == PlayerStatus.PLAY || player.getStatus() == PlayerStatus.ALL_IN) {
                 playerDto.setGameResult(
                         GameResultDto.builder().isWinner(true)
                                 .earnedMoney(board.getPot())
@@ -274,7 +299,7 @@ public class BoardServiceV1 {
             } else {
                 playerDto.setGameResult(
                         GameResultDto.builder()
-                        .isWinner(false).build());
+                                .isWinner(false).build());
             }
         }
 
@@ -283,17 +308,18 @@ public class BoardServiceV1 {
         simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.GAME_END.getDetail(), boardDto));
 
         try {
-            Thread.sleep(RESULT_ANIMATION_DELAY);
-        } catch (InterruptedException e){
+            Thread.sleep(RESULT_ANIMATION_DELAY * 1000);
+        } catch (InterruptedException e) {
             e.getStackTrace();
         }
+
 
         return boardDto;
     }
 
     /**
      * 쇼다운
-     *
+     * <p>
      * 1. 오버벳 반환
      * 2. 승자 가리기
      * 3. 팟 분배하기 (사이드 팟 생각)
@@ -307,13 +333,13 @@ public class BoardServiceV1 {
         simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.SHOW_DOWN.getDetail(), boardDto));
         for (PlayerDto player : boardDto.getPlayers()) {
             GameResultDto gameResult = player.getGameResult();
-            if(gameResult.isWinner()){
+            if (gameResult.isWinner()) {
                 winnerCount++;
             }
         }
         try {
-            Thread.sleep((long) RESULT_ANIMATION_DELAY * winnerCount);
-        } catch (InterruptedException e){
+            Thread.sleep(RESULT_ANIMATION_DELAY * winnerCount * 1000);
+        } catch (InterruptedException e) {
             e.getStackTrace();
         }
         return boardDto;
@@ -325,13 +351,12 @@ public class BoardServiceV1 {
         GameResultDto gameResultDto;
         BoardDto boardDto = new BoardDto(board);
 
-        for(int i = 0; i < board.getTotalPlayer(); i++) {
+        for (int i = 0; i < board.getTotalPlayer(); i++) {
             Player player = players.get(i);
 
-            if(player.getStatus() == PlayerStatus.FOLD){
+            if (player.getStatus() == PlayerStatus.FOLD) {
                 gameResultDto = GameResultDto.builder().isWinner(false).build();
-            }
-            else {
+            } else {
                 ArrayList<Integer> cardPool = new ArrayList<>(List.copyOf(communityCards));
                 cardPool.add(player.getCard1());
                 cardPool.add(player.getCard2());
@@ -344,8 +369,9 @@ public class BoardServiceV1 {
 
     /**
      * initBet
-     *
+     * <p>
      * 페이즈가 끝났을 때 각 플레이어들의 베팅을 팟에 모음.
+     *
      * @param board
      */
     public void initBet(Board board) {
@@ -362,6 +388,7 @@ public class BoardServiceV1 {
 
     /**
      * 다음 페이즈를 시작한다.
+     *
      * @param board
      */
     @Transactional
@@ -370,15 +397,11 @@ public class BoardServiceV1 {
 
         if (board.getPhaseStatus() == PhaseStatus.PRE_FLOP) {
             board.setPhaseStatus(PhaseStatus.FLOP);
-        }
-
-        else if (board.getPhaseStatus() == PhaseStatus.FLOP) {
+        } else if (board.getPhaseStatus() == PhaseStatus.FLOP) {
             board.setPhaseStatus(PhaseStatus.TURN);
-        }
-        else if (board.getPhaseStatus() == PhaseStatus.TURN) {
+        } else if (board.getPhaseStatus() == PhaseStatus.TURN) {
             board.setPhaseStatus(PhaseStatus.RIVER);
-        }
-        else if (board.getPhaseStatus() == PhaseStatus.RIVER) {
+        } else if (board.getPhaseStatus() == PhaseStatus.RIVER) {
             board.setPhaseStatus(PhaseStatus.SHOWDOWN);
         }
     }
@@ -535,7 +558,7 @@ public class BoardServiceV1 {
 
         List<Player> players = board.getPlayers();
 
-        if(board.getTotalPlayer() == 2){
+        if (board.getTotalPlayer() == 2) {
             board.setActionPos(board.getBtn());
         } else {
             board.setActionPos(board.getBettingPos());
@@ -613,12 +636,12 @@ public class BoardServiceV1 {
         simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.PLAYER_EXIT.getDetail(), new BoardDto(board)));
 
         for (Player player : players) {
-            if(player.getStatus() == PlayerStatus.PLAY)
+            if (player.getStatus() == PlayerStatus.PLAY)
                 actionablePlayerCount++;
         }
 
-        if(actionablePlayerCount == 1){
-           endGame(board);
+        if (actionablePlayerCount == 1) {
+            endGame(board);
         }
 
     }
