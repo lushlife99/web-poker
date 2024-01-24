@@ -81,8 +81,10 @@ public class HandCalculatorUtils {
             }
         }
 
-        return GameResultDto.builder().handValue(handValue).jokBo(jokBoList).build();
+        return GameResultDto.builder().handValue(handValue).jokBo(jokBoList).handContext(getHandContextByValue(handValue)).build();
     }
+
+
 
     public static String getHandContextByValue(long value) {
         String handContext;

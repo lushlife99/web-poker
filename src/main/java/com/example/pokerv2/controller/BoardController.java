@@ -60,4 +60,5 @@ public class BoardController {
         boardServiceV1.endGameTest(boardId);
         return new ResponseEntity(HttpStatus.OK);
     }
+
 }

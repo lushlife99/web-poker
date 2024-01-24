@@ -209,6 +209,8 @@ public class BoardServiceV1 {
      */
     public void endGame(Board board) {
 
+        initBet(board);
+
         List<Player> players = board.getPlayers();
         int foldCount = 0;
         for (Player player : players) {
