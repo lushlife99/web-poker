@@ -1,5 +1,6 @@
 package com.example.pokerv2.service;
 
+import com.example.pokerv2.dto.UserDto;
 import com.example.pokerv2.error.CustomException;
 import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.model.Hud;
@@ -7,9 +8,19 @@ import com.example.pokerv2.model.User;
 import com.example.pokerv2.repository.HudRepository;
 import com.example.pokerv2.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.Principal;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -20,8 +31,10 @@ public class UserServiceV1 {
     private final UserRepository userRepository;
     private final HudRepository hudRepository;
     private final BCryptPasswordEncoder encoder;
+    @Value("${file:}")
+    private String rootFilePath;
 
-    public User join(User user){
+    public UserDto join(User user){
         Optional<User> findUser = userRepository.findByUserId(user.getUserId());
         if(findUser.isPresent())
             throw new CustomException(ErrorCode.DUPLICATE_USER);
@@ -36,7 +49,42 @@ public class UserServiceV1 {
         savedUser.setPassword(encoder.encode(savedUser.getPassword()));
         savedUser.setRoles(Collections.singletonList("ROLE_USER"));
         userRepository.save(savedUser);
-        return savedUser;
+        return new UserDto(savedUser);
     }
 
+    public UserDto getMyProfile(Principal principal) {
+        User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        return new UserDto(user);
+    }
+
+    public byte[] getUserImage(String imagePath) {
+        try {
+            Path path = Paths.get(rootFilePath, imagePath).toAbsolutePath();
+            Resource imageResource = new UrlResource(path.toUri());
+
+            if (imageResource.exists()) {
+                return Files.readAllBytes(path);
+            } else {
+                throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+            }
+
+        } catch (IOException e) {
+            throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+        }
+
+    }
+
+    public UserDto updateUserImage(MultipartFile file, Principal principal) {
+        User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+
+        Path path = Paths.get(rootFilePath, user.getImagePath()).toAbsolutePath();
+        try {
+            Files.createDirectories(path);
+            file.transferTo(new File(path.toString()));
+        } catch (IOException e) {
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+
+        return new UserDto(user);
+    }
 }

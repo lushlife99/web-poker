@@ -15,10 +15,10 @@ public class AuthController {
 
     @PostMapping("/join")
     public ResponseEntity join(@RequestBody User user) {
-        System.out.println("AuthController.join");
         userService.join(user);
         return new ResponseEntity(HttpStatus.OK);
     }
+
 
 }
 
