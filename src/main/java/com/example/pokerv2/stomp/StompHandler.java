@@ -1,5 +1,6 @@
 package com.example.pokerv2.stomp;
 
+import com.example.pokerv2.service.PlayerLifeCycleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
@@ -20,8 +21,10 @@ import org.springframework.stereotype.Component;
 public class StompHandler implements ChannelInterceptor {
 
     private final WebSocketAuthenticatorService webSocketAuthenticatorService;
+    private final PlayerLifeCycleService playerLifeCycleService;
     private static final String USERNAME_HEADER = "userId";
     private static final String PASSWORD_HEADER = "password";
+
     @Override
     public Message<?> preSend(final Message<?> message, final MessageChannel channel) throws AuthenticationException {
         final StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
@@ -34,6 +37,12 @@ public class StompHandler implements ChannelInterceptor {
                 accessor.setUser(user);
             } else {
                 throw new MessageDeliveryException("UNAUTHORIZED");
+            }
+        }
+
+        else if (StompCommand.DISCONNECT == accessor.getCommand()) {
+            if(accessor.getUser() != null) {
+                playerLifeCycleService.setDisconnect(accessor.getUser());
             }
         }
         return message;

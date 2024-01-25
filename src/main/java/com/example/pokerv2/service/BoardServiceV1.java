@@ -558,8 +558,6 @@ public class BoardServiceV1 {
 
     private void setFirstActionPos(Board board) {
 
-        List<Player> players = board.getPlayers();
-
         if (board.getTotalPlayer() == 2) {
             board.setActionPos(board.getBtn());
         } else {
@@ -584,6 +582,17 @@ public class BoardServiceV1 {
             return new BoardDto(board);
 
         return null;
+    }
+
+    public List<BoardDto> getContext(Principal principal) {
+        User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        List<Player> playerList = user.getPlayerList();
+        List<BoardDto> context = new ArrayList<>();
+        for (Player player : playerList) {
+            context.add(new BoardDto(player.getBoard()));
+        }
+
+        return context;
     }
 
 

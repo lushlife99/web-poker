@@ -89,6 +89,7 @@ public class PotDistributorUtils {
 
     private static void distributeDrawPlayers(BoardDto boardDto, int firstPlayerIdx, long handValue) {
         List<PlayerDto> winPlayerList = new ArrayList<>();
+
         List<PlayerDto> players = boardDto.getPlayers();
         for(int i = firstPlayerIdx; i < players.size(); i++){
             PlayerDto playerDto = players.get(i);
@@ -96,17 +97,20 @@ public class PotDistributorUtils {
                 winPlayerList.add(playerDto);
             }
         }
+        System.out.println(firstPlayerIdx);
+        System.out.println(winPlayerList.size());
         winPlayerList.sort(TOTAL_CALL_SIZE_COMPARATOR);
-        for(int i = firstPlayerIdx + winPlayerList.size() - 1; i < players.size(); i++) {
+        for(int i = firstPlayerIdx + winPlayerList.size(); i < players.size(); i++) {
             PlayerDto losePlayer = players.get(i);
-            int lpTotalCallSize = losePlayer.getTotalCallSize();
+            System.out.println("losePlayer = " + losePlayer);
             for(int j = 0; j < winPlayerList.size(); j++) {
                 PlayerDto winPlayer = winPlayerList.get(j);;
                 GameResultDto wpGameResult = winPlayer.getGameResult();
-                int takePotAmount = lpTotalCallSize / (winPlayerList.size() - j);
+                int takePotAmount;
 
-                if(winPlayer.getTotalCallSize() <= takePotAmount) {
-                    System.out.println(takePotAmount);
+                if(winPlayer.getTotalCallSize() <= losePlayer.getTotalCallSize() / (winPlayerList.size() - j)) {
+                    takePotAmount = winPlayer.getTotalCallSize();
+                    System.out.println(losePlayer.getUserId() + " to " + winPlayer.getUserId() + " " + takePotAmount);
                     winPlayer.setMoney(winPlayer.getMoney() + takePotAmount);
                     losePlayer.setTotalCallSize(losePlayer.getTotalCallSize() - takePotAmount);
                     boardDto.setPot(boardDto.getPot() - takePotAmount);
@@ -114,10 +118,11 @@ public class PotDistributorUtils {
                 }
 
                 else {
+                    takePotAmount = losePlayer.getTotalCallSize() / (winPlayerList.size() - j);
                     for(int k = j; k < winPlayerList.size(); k++) {
                         PlayerDto drawPlayer = winPlayerList.get(k);
+                        System.out.println(losePlayer.getUserId() + "to " + drawPlayer.getUserId() + " " + takePotAmount);
                         drawPlayer.setMoney(drawPlayer.getMoney() + takePotAmount);
-                        drawPlayer.setTotalCallSize(drawPlayer.getTotalCallSize() - takePotAmount);
                         boardDto.setPot(boardDto.getPot() - takePotAmount);
                         drawPlayer.getGameResult().setEarnedMoney(drawPlayer.getGameResult().getEarnedMoney() + takePotAmount);
                     }
