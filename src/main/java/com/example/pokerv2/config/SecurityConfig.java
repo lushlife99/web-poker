@@ -36,7 +36,7 @@ public class SecurityConfig  {
                 .csrf((csrfConfig) -> csrfConfig.disable())
                 .authorizeHttpRequests((authorizeRequests) ->
                                 authorizeRequests
-                                        .requestMatchers("/join", "/login").permitAll()
+                                        .requestMatchers("/join", "/login", "/test/**").permitAll()
                                         .anyRequest().authenticated()
                 )
                 .formLogin((formLogin) ->

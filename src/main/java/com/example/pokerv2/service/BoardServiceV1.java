@@ -39,6 +39,7 @@ public class BoardServiceV1 {
     private static final int MAX_PLAYER = 6;
     private final static String TOPIC_PREFIX = "/topic/board/";
     private final static int RESULT_ANIMATION_DELAY = 5;
+    private final static int ACTION_TIME = 30;
 
     /**
      * 24/01/04 chan
@@ -114,26 +115,26 @@ public class BoardServiceV1 {
      * all-in인 유저가 존재한다면 : 승자를 가려야 함. show-down 진행
      *
      * @param boardDto
-     * @param principal
      */
 
     @Transactional
-    public void action(BoardDto boardDto, Principal principal) {
+    public void action(BoardDto boardDto, String userId) {
 
-        Board board = saveBoardChanges(boardDto, principal);
+
+        Board board = saveBoardChanges(boardDto, userId);
         //saveAction(boardDto); // actionService -> migration
-        boolean isExistNextAction = setNextActionPos(board);
+        boolean isGameEnd = setNextActionPos(board);
 
-        if (!isExistNextAction) {
+        if (isGameEnd) {
             endGame(board);
         }
     }
 
     @Transactional
-    public Board saveBoardChanges(BoardDto boardDto, Principal principal) {
+    public Board saveBoardChanges(BoardDto boardDto, String userId) {
 
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-        if (!isSeatInBoard(board, principal.getName()))
+        if (!isSeatInBoard(board, userId))
             throw new CustomException(ErrorCode.BAD_REQUEST);
 
         for (PlayerDto playerDto : boardDto.getPlayers()) {
@@ -145,58 +146,123 @@ public class BoardServiceV1 {
     }
 
     /**
+     * 함수 리팩토링 해야함. 엉망임.
      * setNextActionPos
      *
+     *
+     *
      * @param board
-     * @return 다음 액션 순서가 존재한다면 actionPos를 알맞게 지정해주고 return true
-     * 존재하지 않다면 return false
+     * @return 게임이 끝났다면 true
      */
     private boolean setNextActionPos(Board board) {
 
         List<Player> players = board.getPlayers();
         int actionPos = board.getActionPos();
-        int actionPlayerIdx = 0;
+        int actionPlayerIdx = getPlayerIdxByPos(board, actionPos);
         int actionableCount = 0;
-
-        for (int i = 0; i < players.size(); i++) {
-            Player player = players.get(i);
-            if (player.getPosition().getPosNum() == actionPos) {
-                actionPlayerIdx = i;
-            }
-        }
 
         for (int i = 0; i < board.getTotalPlayer(); i++) {
             Player player = players.get(i);
-            if (player.getStatus() == PlayerStatus.PLAY) {
+            if (player.getStatus() == PlayerStatus.PLAY || player.getStatus() == PlayerStatus.DISCONNECT_PLAYED) {
                 actionableCount++;
             }
         }
 
         if (actionableCount < 2) {
-            return false;
+            return true;
         }
 
         for (int i = 1; i <= board.getTotalPlayer(); i++) {
-
             Player nextActionCandidate = players.get((actionPlayerIdx + i) % board.getTotalPlayer());
-            if (nextActionCandidate.getStatus().equals(PlayerStatus.PLAY)) {
-                board.setLastActionTime(LocalDateTime.now());
-                if (nextActionCandidate.getPosition().getPosNum() != board.getBettingPos()) {
-                    board.setActionPos(nextActionCandidate.getPosition().getPosNum());
-                    simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_ACTION.getDetail(), new BoardDto(board)));
-                    return true;
+            if(nextActionCandidate.getPosition().getPosNum() == board.getBettingPos()) {
+                nextPhase(board);
+                if (board.getPhaseStatus() != PhaseStatus.SHOWDOWN) {
+                    simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), new BoardDto(board)));
+                    return false;
                 } else {
-                    nextPhase(board);
-                    if (board.getPhaseStatus() != PhaseStatus.SHOWDOWN) {
-                        simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), new BoardDto(board)));
+                    return true;
+                }
+            } else {
+                board.setLastActionTime(LocalDateTime.now());
+                board.setActionPos(nextActionCandidate.getPosition().getPosNum());
+                simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_ACTION.getDetail(), new BoardDto(board)));
+                if(nextActionCandidate.getStatus().equals(PlayerStatus.DISCONNECT_PLAYED)) {
+                    try {
+                        Thread.sleep(ACTION_TIME * 1000);
+                    } catch (InterruptedException e) {
+                        throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+                    }
+
+                    board = boardRepository.findById(board.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+
+                    if (isGameEnd(board)){
                         return true;
-                    } else {
-                        return false;
+                    }
+
+                    timeOutPlayer(nextActionCandidate);
+                    int nextActionPos = getNextActionPos(board);
+
+                    if(nextActionPos == -1) {
+                        return true;
+                    }
+                    else {
+                        board.setActionPos(nextActionPos);
+                        simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_ACTION.getDetail(), new BoardDto(board)));
                     }
                 }
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public int getNextActionPos(Board board) {
+        List<Player> players = board.getPlayers();
+        int currentActPlayerIdx = getPlayerIdxByPos(board, board.getActionPos());
+        for (int i = 1; i < players.size(); i++) {
+            Player player = players.get(currentActPlayerIdx + i);
+            PlayerStatus status = player.getStatus();
+
+            if(player.getPosition().getPosNum() == board.getBettingPos()) {
+                return -1;
+            }
+
+            if(status == PlayerStatus.PLAY || status == PlayerStatus.DISCONNECT_PLAYED) {
+                return player.getPosition().getPosNum();
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     * GameEnd를 만족하는 상황인지 체크한다.
+     *
+     * @param board
+     * @return
+     */
+    private boolean isGameEnd(Board board) {
+        for (Player player : board.getPlayers()) {
+            int foldCount = 0;
+            if(player.getStatus() == PlayerStatus.FOLD || player.getStatus() == PlayerStatus.DISCONNECT_FOLD){
+                foldCount++;
+            }
+
+            if(foldCount == board.getTotalPlayer() - 1){
+                return true;
             }
         }
         return false;
+    }
+
+    @Transactional
+    public void timeOutPlayer(Player player) {
+        Board board = boardRepository.findById(player.getBoard().getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        List<Player> players = board.getPlayers();
+        Player timeOutPlayer = players.get(getPlayerIdxByPos(board, player.getPosition().getPosNum()));
+        if(timeOutPlayer.getStatus() == PlayerStatus.DISCONNECT_PLAYED) {
+            sitOut(new BoardDto(board), timeOutPlayer.getUser().getUserId());
+        }
     }
 
     /**
@@ -210,17 +276,10 @@ public class BoardServiceV1 {
      */
     public void endGame(Board board) {
 
-        initBet(board);
-
+        initPhase(board);
         List<Player> players = board.getPlayers();
-        int foldCount = 0;
-        for (Player player : players) {
-            if (player.getStatus() == PlayerStatus.FOLD) {
-                foldCount++;
-            }
-        }
 
-        if (foldCount == board.getTotalPlayer() - 1) {
+        if(isGameEnd(board)){
             winOnePlayer(board);
         } else {
             showDown(board);
@@ -252,11 +311,16 @@ public class BoardServiceV1 {
         board.setCommunityCard4(0);
         board.setCommunityCard5(0);
         for (Player player : board.getPlayers()) {
-            player.setCard1(0);
-            player.setCard2(0);
-            player.setTotalCallSize(0);
-            player.setPhaseCallSize(0);
-            player.setStatus(PlayerStatus.FOLD);
+            if(player.getStatus().getStatusNum() < PlayerStatus.FOLD.getStatusNum()){
+                dropDisconnectedPlayer(board, player);
+            }
+            else {
+                player.setCard1(0);
+                player.setCard2(0);
+                player.setTotalCallSize(0);
+                player.setPhaseCallSize(0);
+                player.setStatus(PlayerStatus.FOLD);
+            }
         }
         boardRepository.save(board);
         simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.INIT_BOARD.getDetail(), new BoardDto(board)));
@@ -376,7 +440,7 @@ public class BoardServiceV1 {
      *
      * @param board
      */
-    public void initBet(Board board) {
+    public void initPhase(Board board) {
         List<Player> players = board.getPlayers();
 
         for (Player player : players) {
@@ -417,7 +481,7 @@ public class BoardServiceV1 {
     private Board beforeNextPhase(Board board) {
         List<Player> players = board.getPlayers();
         int betPos = players.get((getPlayerIdxByPos(board, board.getBtn()) + 1) % players.size()).getPosition().getPosNum();
-        initBet(board);
+        initPhase(board);
         board.setActionPos(betPos);
         board.setBettingPos(betPos);
         return boardRepository.save(board);
@@ -620,8 +684,23 @@ public class BoardServiceV1 {
     }
 
     @Transactional
-    public void sitOut(BoardDto boardDto, Principal principal) {
-        User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+    public void dropDisconnectedPlayer(Board board, Player player) {
+        User user = player.getUser();
+        user.setMoney(user.getMoney() + player.getMoney());
+
+        board.getPlayers().remove(player);
+        playerRepository.delete(player);
+        board.setTotalPlayer(board.getTotalPlayer() - 1);
+    }
+
+    @Transactional
+    public void sitOut(BoardDto boardDto, String userId) {
+        /**
+         * 만약 버튼 플레이어가 나갔을 경우 버튼 수정해 주기.
+         *
+         * bettingPos 플레이어가 나갔을 경우에 그 다음 플레이어로 수정하기.
+         */
+        User user = userRepository.findByUserId(userId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
         int actionablePlayerCount = 0;
@@ -647,14 +726,13 @@ public class BoardServiceV1 {
         simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.PLAYER_EXIT.getDetail(), new BoardDto(board)));
 
         for (Player player : players) {
-            if (player.getStatus() == PlayerStatus.PLAY)
+            if (player.getStatus() == PlayerStatus.PLAY || player.getStatus() == PlayerStatus.DISCONNECT_PLAYED)
                 actionablePlayerCount++;
         }
 
         if (actionablePlayerCount == 1) {
             endGame(board);
         }
-
     }
 
     @Transactional

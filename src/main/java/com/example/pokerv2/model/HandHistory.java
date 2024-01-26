@@ -18,7 +18,7 @@ public class HandHistory {
 
     @Id @GeneratedValue
     private Long id;
-    @OneToMany(mappedBy = "handHistory") @Builder.Default @OrderBy("actionNo asc")
+    @OneToMany(mappedBy = "handHistory", cascade = CascadeType.ALL) @Builder.Default @OrderBy("actionNo asc")
     private List<Action> actionList = new ArrayList<>();
     private int actionCount;
     private int potAmountPf;
