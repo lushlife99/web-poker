@@ -2,7 +2,6 @@ package com.example.pokerv2.model;
 
 import com.example.pokerv2.dto.BoardDto;
 import com.example.pokerv2.enums.PhaseStatus;
-import com.example.pokerv2.enums.Position;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

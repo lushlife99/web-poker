@@ -1,11 +1,15 @@
 package com.example.pokerv2.controller;
 
 import com.example.pokerv2.dto.BoardDto;
+import com.example.pokerv2.model.Board;
+import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.service.BoardServiceV1;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -17,6 +21,7 @@ import java.util.List;
 public class BoardController {
 
     private final BoardServiceV1 boardServiceV1;
+    private final BoardRepository boardRepository;
 
     @GetMapping("/context")
     public List<BoardDto> getContext(Principal principal) {
@@ -31,7 +36,7 @@ public class BoardController {
 
     @MessageMapping("/board/action")
     public void action(@RequestBody BoardDto boardDto, Principal principal){
-        boardServiceV1.action(boardDto, principal);
+        boardServiceV1.action(boardDto, principal.getName());
     }
 
     @GetMapping("/{boardId}")
@@ -41,7 +46,7 @@ public class BoardController {
 
     @PutMapping("/exit")
     public ResponseEntity exitGame(@RequestBody BoardDto board, Principal principal) {
-        boardServiceV1.sitOut(board, principal);
+        boardServiceV1.sitOut(board, principal.getName());
         return new ResponseEntity(HttpStatus.OK);
     }
 
@@ -66,5 +71,6 @@ public class BoardController {
         boardServiceV1.endGameTest(boardId);
         return new ResponseEntity(HttpStatus.OK);
     }
+
 
 }
