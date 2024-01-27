@@ -7,6 +7,7 @@ import com.example.pokerv2.service.BoardServiceV1;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,10 +35,11 @@ public class BoardController {
         return boardServiceV1.join(bb, principal);
     }
 
-    @MessageMapping("/board/action")
-    public void action(@RequestBody BoardDto boardDto, Principal principal){
-        boardServiceV1.action(boardDto, principal.getName());
+    @MessageMapping("/board/action/{option}")
+    public void action(@RequestBody BoardDto boardDto, @DestinationVariable String option, Principal principal){
+        boardServiceV1.action(boardDto, option, principal.getName());
     }
+
 
     @GetMapping("/{boardId}")
     public BoardDto get(@PathVariable Long boardId, Principal principal) {
