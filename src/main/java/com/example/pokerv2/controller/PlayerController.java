@@ -1,6 +1,5 @@
 package com.example.pokerv2.controller;
 
-import com.example.pokerv2.dto.BoardDto;
 import com.example.pokerv2.service.PlayerLifeCycleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

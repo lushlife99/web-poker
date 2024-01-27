@@ -279,10 +279,11 @@ public class BoardServiceV1 {
      */
     private boolean isGameEnd(Board board) {
         System.out.println("BoardServiceV1.isGameEnd");
-        System.out.println(board);
+        System.out.println(new BoardDto(board));
         for (Player player : board.getPlayers()) {
             int foldCount = 0;
             if (player.getStatus() == PlayerStatus.FOLD || player.getStatus() == PlayerStatus.DISCONNECT_FOLD) {
+                System.out.println("FOLDCOUNT" + foldCount);
                 foldCount++;
             }
 
@@ -668,7 +669,6 @@ public class BoardServiceV1 {
         } else {
             board.setActionPos(board.getBettingPos());
         }
-
     }
 
     public BoardDto get(Long boardId, Principal principal) {
@@ -689,6 +689,7 @@ public class BoardServiceV1 {
         return null;
     }
 
+    @Transactional
     public List<BoardDto> getContext(Principal principal) {
         User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> playerList = user.getPlayerList();
@@ -734,13 +735,36 @@ public class BoardServiceV1 {
         board.setTotalPlayer(board.getTotalPlayer() - 1);
     }
 
+    public void setBtnPrevPlayer(Board board) {
+
+        int btnPlayerIdx = getPlayerIdxByPos(board, board.getBtn());
+        int prevPlayerIdx;
+        if(btnPlayerIdx - 1 < 0) {
+            prevPlayerIdx = board.getTotalPlayer() - 1;
+        } else {
+            prevPlayerIdx = btnPlayerIdx - 1;
+        }
+        Position prevPlayerPos = board.getPlayers().get(prevPlayerIdx).getPosition();
+        board.setBtn(prevPlayerPos.getPosNum());
+    }
+
+    public void setBettingPosNextPlayer(Board board) {
+
+        int betPlayerIdx = getPlayerIdxByPos(board, board.getBettingPos());
+        int nextPlayerIdx;
+        if(betPlayerIdx + 1 <= board.getTotalPlayer()) {
+            nextPlayerIdx = 0;
+        } else {
+            nextPlayerIdx = betPlayerIdx + 1;
+        }
+
+        Position updateBetPos = board.getPlayers().get(nextPlayerIdx).getPosition();
+        board.setBettingPos(updateBetPos.getPosNum());
+    }
+
     @Transactional
     public void sitOut(BoardDto boardDto, String userId) {
-        /**
-         * 만약 버튼 플레이어가 나갔을 경우 버튼 수정해 주기.
-         *
-         * bettingPos 플레이어가 나갔을 경우에 그 다음 플레이어로 수정하기.
-         */
+
         User user = userRepository.findByUserId(userId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
@@ -748,9 +772,17 @@ public class BoardServiceV1 {
 
         Player exitPlayer;
         for (Player player : players) {
-
             if (player.getUser().equals(user)) {
                 exitPlayer = playerRepository.findById(player.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+
+                if(exitPlayer.getPosition().getPosNum() == board.getBtn()) {
+                    setBtnPrevPlayer(board);
+                }
+
+                if(board.getBettingPos() == exitPlayer.getPosition().getPosNum()) {
+                    setBettingPosNextPlayer(board);
+                }
+
                 user.setMoney(user.getMoney() + exitPlayer.getMoney());
                 if (board.getPhaseStatus() != PhaseStatus.WAITING && player.getPhaseCallSize() != 0) {
                     board.setPot(board.getPot() + player.getPhaseCallSize());
