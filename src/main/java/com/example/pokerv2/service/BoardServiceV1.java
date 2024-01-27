@@ -230,7 +230,13 @@ public class BoardServiceV1 {
 
                         if (nextActionPos == -1) {
                             System.out.println(4);
-                            return true;
+                            nextPhase(board);
+                            if (board.getPhaseStatus() != PhaseStatus.SHOWDOWN) {
+                                simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), new BoardDto(board)));
+                                return false;
+                            } else {
+                                return true;
+                            }
                         } else {
                             System.out.println(5);
                             board.setActionPos(nextActionPos);
@@ -287,6 +293,7 @@ public class BoardServiceV1 {
 
     @Transactional
     public void timeOutPlayer(Player player) {
+        System.out.println("timeoutPlayer " + player.getUser().getUserId());
         Board board = boardRepository.findById(player.getBoard().getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
         Player timeOutPlayer = players.get(getPlayerIdxByPos(board, player.getPosition().getPosNum()));
