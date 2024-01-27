@@ -43,6 +43,8 @@ public class PlayerLifeCycleService {
                 }
             }
         }
+        System.out.println("PlayerLifeCycleService.setDisconnect");
+        System.out.println("1  " + principal.getName());
     }
 
     @Transactional

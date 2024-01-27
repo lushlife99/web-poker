@@ -39,7 +39,7 @@ public class BoardServiceV1 {
     private static final int MAX_PLAYER = 6;
     private final static String TOPIC_PREFIX = "/topic/board/";
     private final static int RESULT_ANIMATION_DELAY = 5;
-    private final static int ACTION_TIME = 30;
+    private final static int ACTION_TIME = 10;
 
     /**
      * 24/01/04 chan
