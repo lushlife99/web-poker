@@ -278,6 +278,8 @@ public class BoardServiceV1 {
      * @return
      */
     private boolean isGameEnd(Board board) {
+        System.out.println("BoardServiceV1.isGameEnd");
+        System.out.println(board);
         for (Player player : board.getPlayers()) {
             int foldCount = 0;
             if (player.getStatus() == PlayerStatus.FOLD || player.getStatus() == PlayerStatus.DISCONNECT_FOLD) {
