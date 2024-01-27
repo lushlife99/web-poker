@@ -219,7 +219,7 @@ public class BoardServiceV1 {
                         }
 
                         board = boardRepository.findById(board.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-
+                        board.setLastActionTime(LocalDateTime.now());
                         if (isGameEnd(board)) {
                             System.out.println(3);
                             return true;
@@ -293,7 +293,6 @@ public class BoardServiceV1 {
 
     @Transactional
     public void timeOutPlayer(Player player) {
-        System.out.println("timeoutPlayer " + player.getUser().getUserId());
         Board board = boardRepository.findById(player.getBoard().getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
         Player timeOutPlayer = players.get(getPlayerIdxByPos(board, player.getPosition().getPosNum()));
