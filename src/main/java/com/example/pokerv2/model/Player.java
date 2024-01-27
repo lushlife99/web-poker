@@ -38,7 +38,6 @@ public class Player {
 
     public void changePlayerStatus(PlayerDto playerDto) {
         this.money = playerDto.getMoney();
-        this.status = PlayerStatus.valueOf(playerDto.getStatus());
         this.phaseCallSize = playerDto.getPhaseCallSize();
     }
 }
