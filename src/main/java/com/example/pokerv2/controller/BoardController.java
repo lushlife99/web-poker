@@ -48,6 +48,8 @@ public class BoardController {
 
     @PutMapping("/exit")
     public ResponseEntity exitGame(@RequestBody BoardDto board, Principal principal) {
+        System.out.println(principal.getName());
+        System.out.println(board);
         boardServiceV1.sitOut(board, principal.getName());
         return new ResponseEntity(HttpStatus.OK);
     }
