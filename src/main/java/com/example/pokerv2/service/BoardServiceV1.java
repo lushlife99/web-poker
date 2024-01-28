@@ -47,11 +47,8 @@ public class BoardServiceV1 {
     private final static int ACTION_TIME = 10;
 
     /**
-     * 24/01/04 chan
-     * <p>
-     * join
-     * <p>
-     * 1. 플레이 가능한 보드를 찾는다. 없다면 만든다.
+     * join - 24/01/04 chan
+     * 1. 플레이 가능한 보드를 찾는다.
      * 2. money를 bb로 환전한다.
      * 3. Player 입장.
      */
@@ -125,14 +122,16 @@ public class BoardServiceV1 {
         int gameSeq = boardDto.getGameSeq();
         if (nextActionPos == -1) {
             if (isGameEnd(board)) {
-                System.out.println("BoardServiceV1.action1");
                 endGame(board);
                 return true;
             } else {
-                System.out.println("BoardServiceV1.action2");
                 nextPhase(board);
+                Player nextActionPlayer = players.get(getPlayerIdxByPos(board, board.getActionPos()));
                 if (board.getPhaseStatus() == PhaseStatus.SHOWDOWN) {
                     endGame(board);
+                } else if(nextActionPlayer.getStatus().getStatusNum() <= PlayerStatus.FOLD.getStatusNum()){
+                    boardDto = new BoardDto(board);
+                    return false;
                 } else {
                     simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), new BoardDto(board)));
                 }
@@ -144,12 +143,11 @@ public class BoardServiceV1 {
 
             board.setLastActionTime(LocalDateTime.now());
             board.setActionPos(nextActionPlayer.getPosition().getPosNum());
-            boardRepository.saveAndFlush(board);
             simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_ACTION.getDetail(), new BoardDto(board)));
 
             if (nextActionPlayer.getStatus() == PlayerStatus.DISCONNECT_PLAYED) {
+                boardDto = new BoardDto(board);
                 return false;
-
             } else {
                 return true;
             }
@@ -345,12 +343,14 @@ public class BoardServiceV1 {
             } else {
                 player.setCard1(0);
                 player.setCard2(0);
-                player.setTotalCallSize(0);
                 player.setPhaseCallSize(0);
                 player.setStatus(PlayerStatus.FOLD);
             }
         }
         players.remove(disConnectedPlayers);
+        board.setTotalPlayer(players.size());
+        List<Integer> totalCallSizeList = new ArrayList<>(Arrays.asList(0, 0, 0, 0, 0, 0));
+        board.setTotalCallSize(totalCallSizeList);
         boardRepository.save(board);
         simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.INIT_BOARD.getDetail(), new BoardDto(board)));
     }
@@ -471,12 +471,14 @@ public class BoardServiceV1 {
      */
     public void initPhase(Board board) {
         List<Player> players = board.getPlayers();
-
-        for (Player player : players) {
-            player.setTotalCallSize(player.getTotalCallSize() + player.getPhaseCallSize());
+        List<Integer> totalCallSize = board.getTotalCallSize();
+        for(int i = 0; i < board.getTotalPlayer(); i++) {
+            Player player = players.get(i);
+            totalCallSize.set(i, totalCallSize.get(i) + player.getPhaseCallSize());
             board.setPot(board.getPot() + player.getPhaseCallSize());
             player.setPhaseCallSize(0);
         }
+
         board.setBettingSize(0);
 
     }

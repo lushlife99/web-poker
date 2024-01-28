@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -22,9 +21,6 @@ public class PotDistributorUtils {
 
     private static final Comparator<PlayerDto> HAND_VALUE_COMPARATOR = Comparator
             .comparingLong(p -> p.getGameResult().getHandValue());
-
-    private static final Comparator<PlayerDto> TOTAL_CALL_SIZE_COMPARATOR = Comparator
-            .comparingInt(p -> p.getTotalCallSize());
 
     private PotDistributorUtils() {}
 
@@ -63,10 +59,11 @@ public class PotDistributorUtils {
     private static void distributeOnePlayer(BoardDto boardDto, int winPlayerIdx) {
         List<PlayerDto> players = boardDto.getPlayers();
         PlayerDto winPlayer = players.get(winPlayerIdx);
-        int wpTotalCallSize = winPlayer.getTotalCallSize();
+        List<Integer> totalCallSize = boardDto.getTotalCallSize();
+        int wpTotalCallSize = totalCallSize.get(winPlayerIdx);
         for(int j = winPlayerIdx +1; j < boardDto.getTotalPlayer(); j++) {
             PlayerDto losePlayer = players.get(j);
-            int lpTotalCallSize = losePlayer.getTotalCallSize();
+            int lpTotalCallSize = totalCallSize.get(j);
             int takePotAmount = 0;
             if(wpTotalCallSize <= lpTotalCallSize) {
                 takePotAmount = wpTotalCallSize;
@@ -76,7 +73,7 @@ public class PotDistributorUtils {
             }
 
             winPlayer.setMoney(winPlayer.getMoney() + takePotAmount);
-            losePlayer.setTotalCallSize(losePlayer.getTotalCallSize() - takePotAmount);
+            totalCallSize.set(j, totalCallSize.get(j) - takePotAmount);
             boardDto.setPot(boardDto.getPot() - takePotAmount);
             GameResultDto gameResult = winPlayer.getGameResult();
             gameResult.setEarnedMoney(gameResult.getEarnedMoney() + takePotAmount);
@@ -89,39 +86,50 @@ public class PotDistributorUtils {
 
     private static void distributeDrawPlayers(BoardDto boardDto, int firstPlayerIdx, long handValue) {
         List<PlayerDto> winPlayerList = new ArrayList<>();
+        List<Integer> winPlayerTotalCallSize = new ArrayList<>();
 
         List<PlayerDto> players = boardDto.getPlayers();
+        List<Integer> totalCallSize = boardDto.getTotalCallSize();
+
         for(int i = firstPlayerIdx; i < players.size(); i++){
             PlayerDto playerDto = players.get(i);
             if(playerDto.getGameResult().getHandValue() == handValue){
                 winPlayerList.add(playerDto);
+                winPlayerTotalCallSize.add(boardDto.getTotalCallSize().get(i));
             }
         }
-        System.out.println(firstPlayerIdx);
-        System.out.println(winPlayerList.size());
-        winPlayerList.sort(TOTAL_CALL_SIZE_COMPARATOR);
+        Collections.sort(winPlayerTotalCallSize);
+        List<PlayerDto> sortedWinPlayerList = new ArrayList<>();
+        for (int wpTotalCallSize : winPlayerTotalCallSize) {
+            for (PlayerDto playerDto : winPlayerList) {
+                if (boardDto.getTotalCallSize().get(players.indexOf(playerDto)) == wpTotalCallSize) {
+                    sortedWinPlayerList.add(playerDto);
+                    break;
+                }
+            }
+        }
+
+        winPlayerList = sortedWinPlayerList;
+
         for(int i = firstPlayerIdx + winPlayerList.size(); i < players.size(); i++) {
             PlayerDto losePlayer = players.get(i);
-            System.out.println("losePlayer = " + losePlayer);
             for(int j = 0; j < winPlayerList.size(); j++) {
                 PlayerDto winPlayer = winPlayerList.get(j);;
                 GameResultDto wpGameResult = winPlayer.getGameResult();
                 int takePotAmount;
 
-                if(winPlayer.getTotalCallSize() <= losePlayer.getTotalCallSize() / (winPlayerList.size() - j)) {
-                    takePotAmount = winPlayer.getTotalCallSize();
-                    System.out.println(losePlayer.getUserId() + " to " + winPlayer.getUserId() + " " + takePotAmount);
+                if(winPlayerTotalCallSize.get(j) <= totalCallSize.get(i) / (winPlayerList.size() - j)) {
+                    takePotAmount = winPlayerTotalCallSize.get(j);
                     winPlayer.setMoney(winPlayer.getMoney() + takePotAmount);
-                    losePlayer.setTotalCallSize(losePlayer.getTotalCallSize() - takePotAmount);
+                    totalCallSize.set(i, totalCallSize.get(i) - takePotAmount);
                     boardDto.setPot(boardDto.getPot() - takePotAmount);
                     wpGameResult.setEarnedMoney(wpGameResult.getEarnedMoney() + takePotAmount);
                 }
 
                 else {
-                    takePotAmount = losePlayer.getTotalCallSize() / (winPlayerList.size() - j);
+                    takePotAmount = totalCallSize.get(i) / (winPlayerList.size() - j);
                     for(int k = j; k < winPlayerList.size(); k++) {
                         PlayerDto drawPlayer = winPlayerList.get(k);
-                        System.out.println(losePlayer.getUserId() + "to " + drawPlayer.getUserId() + " " + takePotAmount);
                         drawPlayer.setMoney(drawPlayer.getMoney() + takePotAmount);
                         boardDto.setPot(boardDto.getPot() - takePotAmount);
                         drawPlayer.getGameResult().setEarnedMoney(drawPlayer.getGameResult().getEarnedMoney() + takePotAmount);
