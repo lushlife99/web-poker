@@ -31,7 +31,7 @@ public class BoardDto {
     private int communityCard5;
     private int gameSeq;
     private LocalDateTime lastActionTime;
-
+    private List<Integer> totalCallSize;
     private List<PlayerDto> players;
 
     public BoardDto(Board board) {
@@ -55,6 +55,7 @@ public class BoardDto {
         for (Player player : pList) {
             pDtoList.add(new PlayerDto(player));
         }
+        this.totalCallSize = board.getTotalCallSize();
         this.lastActionTime = board.getLastActionTime();
         this.players = pDtoList;
     }

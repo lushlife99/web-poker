@@ -14,6 +14,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
@@ -36,8 +37,9 @@ class PotDistributorUtilsTest {
         PlayerDto player4 = new PlayerDto(Player.builder().id(4L).user(User.builder().userId("4").id(4L).build()).board(board).position(Position.UTG).status(PlayerStatus.PLAY).build());
         PlayerDto player5 = new PlayerDto(Player.builder().id(5L).user(User.builder().userId("5").id(5L).build()).board(board).position(Position.BB).status(PlayerStatus.PLAY).build());
         PlayerDto player6 = new PlayerDto(Player.builder().id(6L).user(User.builder().userId("6").id(6L).build()).board(board).position(Position.SB).status(PlayerStatus.PLAY).build());
-
         List<PlayerDto> players = this.boardDto.getPlayers();
+        List<Integer> totalCallSizeList = new ArrayList<>(Arrays.asList(0, 0, 0, 0, 0, 0));
+        boardDto.setTotalCallSize(totalCallSizeList);
         players.addAll(List.of(player1, player2, player3, player4, player5, player6));
         player1.setGameResult(GameResultDto.builder().handValue(6).build());
         player2.setGameResult(GameResultDto.builder().handValue(5).build());
@@ -60,13 +62,15 @@ class PotDistributorUtilsTest {
         PlayerDto sixthStrongestPlayer = boardDto.getPlayers().get(5);
 
         int totalCallSize = 1000;
+        List<Integer> totalCallSizeList = boardDto.getTotalCallSize();
+        System.out.println(totalCallSizeList.size());
+        totalCallSizeList.set(0, totalCallSize);
+        totalCallSizeList.set(1, totalCallSize);
+        totalCallSizeList.set(2, totalCallSize);
+        totalCallSizeList.set(3, totalCallSize);
+        totalCallSizeList.set(4, totalCallSize);
+        totalCallSizeList.set(5, totalCallSize);
 
-        firstStrongestPlayer.setTotalCallSize(totalCallSize);
-        secondStrongestPlayer.setTotalCallSize(totalCallSize);
-        thirdStrongestPlayer.setTotalCallSize(totalCallSize);
-        fourthStrongestPlayer.setTotalCallSize(totalCallSize);
-        fifthStrongestPlayer.setTotalCallSize(totalCallSize);
-        sixthStrongestPlayer.setTotalCallSize(totalCallSize);
         boardDto.setPot(totalCallSize * 6);
 
         //when
@@ -91,27 +95,28 @@ class PotDistributorUtilsTest {
 
         int totalCallSize = 1000;
 
-        firstStrongestPlayer.setTotalCallSize(totalCallSize);
-
-        foldPlayer1.setTotalCallSize(totalCallSize);
         foldPlayer1.setStatus(PlayerStatus.FOLD.ordinal());
         foldPlayer1.getGameResult().setHandValue(0);
 
-        foldPlayer2.setTotalCallSize(totalCallSize);
         foldPlayer2.setStatus(PlayerStatus.FOLD.ordinal());
         foldPlayer2.getGameResult().setHandValue(0);
 
-        foldPlayer3.setTotalCallSize(totalCallSize);
         foldPlayer3.setStatus(PlayerStatus.FOLD.ordinal());
         foldPlayer3.getGameResult().setHandValue(0);
 
-        foldPlayer4.setTotalCallSize(totalCallSize);
         foldPlayer4.setStatus(PlayerStatus.FOLD.ordinal());
         foldPlayer4.getGameResult().setHandValue(0);
 
-        foldPlayer5.setTotalCallSize(totalCallSize);
         foldPlayer5.setStatus(PlayerStatus.FOLD.ordinal());
         foldPlayer5.getGameResult().setHandValue(0);
+
+        List<Integer> totalCallSizeList = boardDto.getTotalCallSize();
+        totalCallSizeList.set(0, totalCallSize);
+        totalCallSizeList.set(1, totalCallSize);
+        totalCallSizeList.set(2, totalCallSize);
+        totalCallSizeList.set(3, totalCallSize);
+        totalCallSizeList.set(4, totalCallSize);
+        totalCallSizeList.set(5, totalCallSize);
 
         boardDto.setPot(totalCallSize * 6);
 
@@ -138,12 +143,14 @@ class PotDistributorUtilsTest {
 
         int standardCallSize = 1000;
 
-        firstStrongestPlayer.setTotalCallSize(standardCallSize);
-        secondStrongestPlayer.setTotalCallSize(standardCallSize * 2);
-        thirdStrongestPlayer.setTotalCallSize(standardCallSize * 3);
-        fourthStrongestPlayer.setTotalCallSize(standardCallSize * 4);
-        fifthStrongestPlayer.setTotalCallSize(standardCallSize * 5);
-        sixthStrongestPlayer.setTotalCallSize(standardCallSize * 5);
+        List<Integer> totalCallSizeList = boardDto.getTotalCallSize();
+        totalCallSizeList.set(0, standardCallSize);
+        totalCallSizeList.set(1, standardCallSize * 2);
+        totalCallSizeList.set(2, standardCallSize * 3);
+        totalCallSizeList.set(3, standardCallSize * 4);
+        totalCallSizeList.set(4, standardCallSize * 5);
+        totalCallSizeList.set(5, standardCallSize * 5);
+
         boardDto.setPot(standardCallSize * 20);
 
         //when
@@ -189,25 +196,27 @@ class PotDistributorUtilsTest {
 
         int callSizeStandard = 1000;
 
-        firstStrongestDrawPlayer.setTotalCallSize(callSizeStandard);
         firstStrongestDrawPlayer.getGameResult().setHandValue(2);
 
-        secondStrongestDrawPlayer.setTotalCallSize(callSizeStandard * 3);
         secondStrongestDrawPlayer.getGameResult().setHandValue(2);
 
-        thirdStrongestDrawPlayer.setTotalCallSize(callSizeStandard * 5);
         thirdStrongestDrawPlayer.getGameResult().setHandValue(2);
 
-        fourthStrongestPlayer.setTotalCallSize(callSizeStandard * 10);
         fourthStrongestPlayer.getGameResult().setHandValue(1);
 
-        foldPlayer1.setTotalCallSize(callSizeStandard * 5);
         foldPlayer1.setStatus(PlayerStatus.FOLD.ordinal());
         foldPlayer1.getGameResult().setHandValue(0);
 
-        foldPlayer2.setTotalCallSize(callSizeStandard * 8);
         foldPlayer2.setStatus(PlayerStatus.FOLD.ordinal());
         foldPlayer2.getGameResult().setHandValue(0);
+
+        List<Integer> totalCallSizeList = boardDto.getTotalCallSize();
+        totalCallSizeList.set(0, callSizeStandard);
+        totalCallSizeList.set(1, callSizeStandard * 3);
+        totalCallSizeList.set(2, callSizeStandard * 5);
+        totalCallSizeList.set(3, callSizeStandard * 10);
+        totalCallSizeList.set(4, callSizeStandard * 5);
+        totalCallSizeList.set(5, callSizeStandard * 8);
 
         boardDto.setPot(callSizeStandard * 33);
 

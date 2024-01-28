@@ -23,7 +23,6 @@ public class PlayerDto {
     private int card1;
     private int card2;
     private int status;
-    private int totalCallSize;
     private int phaseCallSize;
     private GameResultDto gameResult;
 
@@ -37,7 +36,6 @@ public class PlayerDto {
         this.card1 = player.getCard1();
         this.card2 = player.getCard2();
         this.status = player.getStatus().ordinal();
-        this.totalCallSize = player.getTotalCallSize();
         this.phaseCallSize = player.getPhaseCallSize();
     }
 
@@ -51,7 +49,6 @@ public class PlayerDto {
         this.card1 = playerDto.getCard1();
         this.card2 = playerDto.getCard2();
         this.status = playerDto.getStatus();
-        this.totalCallSize = playerDto.getTotalCallSize();
         this.phaseCallSize = playerDto.getPhaseCallSize();
 
         this.gameResult = playerDto.getGameResult();
