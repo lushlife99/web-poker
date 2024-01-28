@@ -1,6 +1,8 @@
 package com.example.pokerv2.controller;
 
 import com.example.pokerv2.dto.BoardDto;
+import com.example.pokerv2.error.CustomException;
+import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.model.Board;
 import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.service.BoardServiceV1;
@@ -37,7 +39,27 @@ public class BoardController {
 
     @MessageMapping("/board/action/{option}")
     public void action(@RequestBody BoardDto boardDto, @DestinationVariable String option, Principal principal){
-        boardServiceV1.action(boardDto, option, principal.getName());
+
+        String userId = principal.getName();
+        boardServiceV1.saveBoardChanges(boardDto, option, principal.getName());
+
+        while(true) {
+            if(boardServiceV1.action(boardDto)) {
+                break;
+            }
+            try {
+                Thread.sleep(10 * 1000);
+            } catch (InterruptedException e) {
+                throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+            }
+
+            if(boardServiceV1.isActionPlayerConnect(boardDto)) {
+                break;
+            } else {
+                boardServiceV1.setPlayerDisconnectFold(boardDto);
+            }
+        }
+
     }
 
 
@@ -48,8 +70,6 @@ public class BoardController {
 
     @PutMapping("/exit")
     public ResponseEntity exitGame(@RequestBody BoardDto board, Principal principal) {
-        System.out.println(principal.getName());
-        System.out.println(board);
         boardServiceV1.sitOut(board, principal.getName());
         return new ResponseEntity(HttpStatus.OK);
     }
