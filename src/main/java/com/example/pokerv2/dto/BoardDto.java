@@ -29,6 +29,7 @@ public class BoardDto {
     private int communityCard3;
     private int communityCard4;
     private int communityCard5;
+    private int gameSeq;
     private LocalDateTime lastActionTime;
 
     private List<PlayerDto> players;
@@ -48,6 +49,7 @@ public class BoardDto {
         this.communityCard3 = board.getCommunityCard3();
         this.communityCard4 = board.getCommunityCard4();
         this.communityCard5 = board.getCommunityCard5();
+        this.gameSeq = board.getGameSeq();
         List<Player> pList = board.getPlayers();
         List<PlayerDto> pDtoList = new ArrayList<>();
         for (Player player : pList) {

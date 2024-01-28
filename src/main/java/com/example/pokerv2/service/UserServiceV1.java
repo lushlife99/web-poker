@@ -76,7 +76,7 @@ public class UserServiceV1 {
 
     public UserDto updateUserImage(MultipartFile file, Principal principal) {
         User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-
+        System.out.println(file.getSize());
         Path path = Paths.get(rootFilePath, user.getImagePath()).toAbsolutePath();
         try {
             Files.createDirectories(path);

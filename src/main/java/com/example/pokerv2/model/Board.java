@@ -21,6 +21,8 @@ public class Board {
 
     @Id @GeneratedValue
     private Long id;
+    @Builder.Default
+    private int gameSeq = 0;
     private int btn;
     private int totalPlayer;
     private int blind;
