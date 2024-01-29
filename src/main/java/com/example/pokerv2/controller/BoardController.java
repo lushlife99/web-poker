@@ -24,10 +24,10 @@ import java.util.List;
 public class BoardController {
 
     private final BoardServiceV1 boardServiceV1;
-    private final BoardRepository boardRepository;
 
     @GetMapping("/context")
     public List<BoardDto> getContext(Principal principal) {
+        System.out.println("BoardController.getContext");
         return boardServiceV1.getContext(principal);
     }
 
@@ -40,18 +40,20 @@ public class BoardController {
     @MessageMapping("/board/action/{option}")
     public void action(@RequestBody BoardDto boardDto, @DestinationVariable String option, Principal principal){
 
-        String userId = principal.getName();
         boardServiceV1.saveBoardChanges(boardDto, option, principal.getName());
 
         while(true) {
-            if(boardServiceV1.action(boardDto)) {
+            boolean isNextActionExist = boardServiceV1.action(boardDto);
+
+            if(!isNextActionExist) {
                 break;
             }
-            try {
-                Thread.sleep(10 * 1000);
-            } catch (InterruptedException e) {
-                throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+
+            if(boardServiceV1.isActionPlayerConnect(boardDto)) {
+                break;
             }
+
+            BoardServiceV1.waitDisconnectPlayer();
 
             if(boardServiceV1.isActionPlayerConnect(boardDto)) {
                 break;
@@ -59,7 +61,6 @@ public class BoardController {
                 boardServiceV1.setPlayerDisconnectFold(boardDto);
             }
         }
-
     }
 
 
@@ -68,10 +69,9 @@ public class BoardController {
         return boardServiceV1.get(boardId, principal);
     }
 
-    @PutMapping("/exit")
-    public ResponseEntity exitGame(@RequestBody BoardDto board, Principal principal) {
+    @MessageMapping("/board/exit")
+    public void exitGame(@RequestBody BoardDto board, Principal principal) {
         boardServiceV1.sitOut(board, principal.getName());
-        return new ResponseEntity(HttpStatus.OK);
     }
 
     /**
@@ -95,6 +95,4 @@ public class BoardController {
         boardServiceV1.endGameTest(boardId);
         return new ResponseEntity(HttpStatus.OK);
     }
-
-
 }

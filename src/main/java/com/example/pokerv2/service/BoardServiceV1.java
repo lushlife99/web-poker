@@ -20,7 +20,6 @@ import com.example.pokerv2.utils.HandCalculatorUtils;
 import com.example.pokerv2.utils.PotDistributorUtils;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -109,6 +108,7 @@ public class BoardServiceV1 {
      * all-in인 유저가 존재한다면 : 승자를 가려야 함. show-down 진행
      *
      * @param boardDto
+     * @return 다음 액션이 존재하는지 boolean 리턴.
      */
 
 
@@ -123,15 +123,15 @@ public class BoardServiceV1 {
         if (nextActionPos == -1) {
             if (isGameEnd(board)) {
                 endGame(board);
-                return true;
+                return false;
             } else {
                 nextPhase(board);
                 Player nextActionPlayer = players.get(getPlayerIdxByPos(board, board.getActionPos()));
                 if (board.getPhaseStatus() == PhaseStatus.SHOWDOWN) {
                     endGame(board);
-                } else if(nextActionPlayer.getStatus().getStatusNum() <= PlayerStatus.FOLD.getStatusNum()){
-                    boardDto = new BoardDto(board);
                     return false;
+                } else if(nextActionPlayer.getStatus().getStatusNum() <= PlayerStatus.FOLD.getStatusNum()){
+                    //boardDto = new BoardDto(board);
                 } else {
                     simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), new BoardDto(board)));
                 }
@@ -147,10 +147,18 @@ public class BoardServiceV1 {
 
             if (nextActionPlayer.getStatus() == PlayerStatus.DISCONNECT_PLAYED) {
                 boardDto = new BoardDto(board);
-                return false;
+                return true;
             } else {
                 return true;
             }
+        }
+    }
+
+    public static void waitDisconnectPlayer() {
+        try {
+            Thread.sleep(ACTION_TIME * 1000);
+        } catch (InterruptedException e) {
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -177,8 +185,6 @@ public class BoardServiceV1 {
 
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public Board getRecentBoard(Long boardId) {
-        entityManager.clear();
-        System.out.println("BoardServiceV1.getRecentBoard");
         return boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
     }
 
@@ -273,21 +279,6 @@ public class BoardServiceV1 {
         return false;
     }
 
-//    /**
-//     * @param board
-//     * @param posNum
-//     * @return 타임아웃 로직을 하고 게임이 끝났다면 true 리턴
-//     */
-//    @Transactional(propagation = Propagation.REQUIRES_NEW)
-//    public void timeOutPlayer(Board board, int posNum) {
-//
-//        List<Player> players = board.getPlayers();
-//        Player timeOutPlayer = players.get(getPlayerIdxByPos(board, posNum));
-//        timeOutPlayer.setStatus(PlayerStatus.DISCONNECT_FOLD);
-//        boardRepository.saveAndFlush(board);
-//    }
-
-
     /**
      * endGame
      * <p>
@@ -322,7 +313,7 @@ public class BoardServiceV1 {
         boardRepository.save(board);
     }
 
-    private void initBoard(Board board) {
+    public void initBoard(Board board) {
         board.setPot(0);
         board.setBettingSize(0);
         board.setBettingPos(0);
@@ -338,8 +329,10 @@ public class BoardServiceV1 {
         for (int i = 0; i < board.getTotalPlayer(); i++) {
             Player player = players.get(i);
             if (player.getStatus().getStatusNum() < PlayerStatus.FOLD.getStatusNum()) {
-                dropDisconnectedPlayer(board, player);
+                User user = player.getUser();
+                user.setMoney(user.getMoney() + player.getMoney());
                 disConnectedPlayers.add(player);
+
             } else {
                 player.setCard1(0);
                 player.setCard2(0);
@@ -347,10 +340,11 @@ public class BoardServiceV1 {
                 player.setStatus(PlayerStatus.FOLD);
             }
         }
-        players.remove(disConnectedPlayers);
+        players.removeAll(disConnectedPlayers);
         board.setTotalPlayer(players.size());
         List<Integer> totalCallSizeList = new ArrayList<>(Arrays.asList(0, 0, 0, 0, 0, 0));
         board.setTotalCallSize(totalCallSizeList);
+        playerRepository.deleteAll(disConnectedPlayers);
         boardRepository.save(board);
         simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.INIT_BOARD.getDetail(), new BoardDto(board)));
     }
@@ -432,6 +426,7 @@ public class BoardServiceV1 {
                 winnerCount++;
             }
         }
+
         try {
             Thread.sleep(RESULT_ANIMATION_DELAY * winnerCount * 1000);
         } catch (InterruptedException e) {
@@ -680,7 +675,7 @@ public class BoardServiceV1 {
         return null;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<BoardDto> getContext(Principal principal) {
         User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> playerList = user.getPlayerList();
@@ -688,7 +683,6 @@ public class BoardServiceV1 {
         for (Player player : playerList) {
             context.add(new BoardDto(player.getBoard()));
         }
-
         return context;
     }
 
@@ -718,8 +712,7 @@ public class BoardServiceV1 {
 
     @Transactional
     public void dropDisconnectedPlayer(Board board, Player player) {
-        User user = player.getUser();
-        user.setMoney(user.getMoney() + player.getMoney());
+
 
     }
 
@@ -796,7 +789,6 @@ public class BoardServiceV1 {
             endGame(board);
         }
     }
-
     @Transactional
     public boolean isSeatInBoard(Board board, String userId) {
         List<Player> players = board.getPlayers();

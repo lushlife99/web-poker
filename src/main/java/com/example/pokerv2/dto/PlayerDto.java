@@ -50,7 +50,6 @@ public class PlayerDto {
         this.card2 = playerDto.getCard2();
         this.status = playerDto.getStatus();
         this.phaseCallSize = playerDto.getPhaseCallSize();
-
         this.gameResult = playerDto.getGameResult();
     }
 
