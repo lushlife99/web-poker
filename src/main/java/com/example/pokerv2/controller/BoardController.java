@@ -62,7 +62,7 @@ public class BoardController {
 
     @PostMapping("/start/{boardId}")
     public BoardDto startGame(@PathVariable Long boardId) {
-       return new BoardDto(boardServiceV1.startGame(boardId));
+       return gameHandleService.startGame(boardId);
     }
 
     @PostMapping("/end/{boardId}")

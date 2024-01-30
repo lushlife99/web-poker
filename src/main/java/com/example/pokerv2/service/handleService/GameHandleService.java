@@ -6,10 +6,12 @@ import com.example.pokerv2.enums.PlayerStatus;
 import com.example.pokerv2.error.CustomException;
 import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.model.Board;
+import com.example.pokerv2.model.HandHistory;
 import com.example.pokerv2.model.Player;
 import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.service.ActionService;
 import com.example.pokerv2.service.BoardServiceV1;
+import com.example.pokerv2.service.HandHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -22,16 +24,21 @@ public class GameHandleService {
     private final BoardServiceV1 boardServiceV1;
     private final ActionService actionService;
     private final BoardRepository boardRepository;
+    private final HandHistoryService handHistoryService;
     private final static int ACTION_TIME = 10;
     private final static int RESULT_ANIMATION_TIME = 5;
 
-
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void action(BoardDto boardDto, String option, String userId) {
-
+        actionService.saveAction(boardDto, option, userId);
         Board board = boardServiceV1.saveBoardChanges(boardDto, option, userId);
 
         while(true) {
+
+            if(boardServiceV1.isGameEnd(board.getId())) {
+                endGame(board.getId());
+                break;
+            }
             board = boardServiceV1.action(board.getId());
 
             if(boardServiceV1.isGameEnd(board.getId()) || board.getPhaseStatus() == PhaseStatus.SHOWDOWN) {
@@ -61,6 +68,11 @@ public class GameHandleService {
         }
     }
 
+    public BoardDto startGame(Long boardId) {
+        Board board = boardServiceV1.startGame(boardId);
+        HandHistory handHistory = handHistoryService.createHandHistory(boardId);
+        return new BoardDto(board);
+    }
     public void endGame(Long boardId) {
 
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
@@ -94,7 +106,7 @@ public class GameHandleService {
         }
     }
 
-    public static void waitDisconnectPlayer() {
+    private static void waitDisconnectPlayer() {
         try {
             Thread.sleep(ACTION_TIME * 1000);
         } catch (InterruptedException e) {

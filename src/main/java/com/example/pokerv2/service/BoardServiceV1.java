@@ -304,6 +304,7 @@ public class BoardServiceV1 {
     @Transactional
     public int winOnePlayer(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        board.setPhaseStatus(PhaseStatus.END_GAME);
         List<Player> players = board.getPlayers();
         BoardDto boardDto = new BoardDto(board);
         for (int i = 0; i < players.size(); i++) {
@@ -339,6 +340,7 @@ public class BoardServiceV1 {
     @Transactional
     public int showDown(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        board.setPhaseStatus(PhaseStatus.SHOWDOWN);
         refundOverBet(board);
         BoardDto boardDto = determineWinner(board);
         PotDistributorUtils.distribute(boardDto);
@@ -407,13 +409,13 @@ public class BoardServiceV1 {
     public void nextPhase(Board board) {
 
         if (board.getPhaseStatus() == PhaseStatus.PRE_FLOP) {
-            beforeNextPhase(board);
+            prepareNextPhase(board);
             board.setPhaseStatus(PhaseStatus.FLOP);
         } else if (board.getPhaseStatus() == PhaseStatus.FLOP) {
-            beforeNextPhase(board);
+            prepareNextPhase(board);
             board.setPhaseStatus(PhaseStatus.TURN);
         } else if (board.getPhaseStatus() == PhaseStatus.TURN) {
-            beforeNextPhase(board);
+            prepareNextPhase(board);
             board.setPhaseStatus(PhaseStatus.RIVER);
         } else if (board.getPhaseStatus() == PhaseStatus.RIVER) {
             board.setPhaseStatus(PhaseStatus.SHOWDOWN);
@@ -426,7 +428,7 @@ public class BoardServiceV1 {
      *
      * @return
      */
-    private Board beforeNextPhase(Board board) {
+    private Board prepareNextPhase(Board board) {
         List<Player> players = board.getPlayers();
         int betPos = players.get((getPlayerIdxByPos(board, board.getBtn()) + 1) % players.size()).getPosition().getPosNum();
         initPhase(board.getId());

@@ -2,6 +2,7 @@ package com.example.pokerv2.dto;
 
 import com.example.pokerv2.model.Board;
 import com.example.pokerv2.model.Player;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -30,6 +31,7 @@ public class BoardDto {
     private int communityCard4;
     private int communityCard5;
     private int gameSeq;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
     private LocalDateTime lastActionTime;
     private List<Integer> totalCallSize;
     private List<PlayerDto> players;

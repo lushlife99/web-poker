@@ -40,7 +40,11 @@ public class Board {
     private int communityCard3;
     private int communityCard4;
     private int communityCard5;
+
     private LocalDateTime lastActionTime;
+
+    @OneToOne
+    private HandHistory handHistory;
 
     @OneToMany(mappedBy = "board", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @OrderBy("position asc")
