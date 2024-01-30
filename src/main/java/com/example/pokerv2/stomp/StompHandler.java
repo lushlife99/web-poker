@@ -35,11 +35,11 @@ public class StompHandler implements ChannelInterceptor {
 
                 final UsernamePasswordAuthenticationToken user = webSocketAuthenticatorService.getAuthenticatedOrFail(username, password);
                 accessor.setUser(user);
+                playerLifeCycleService.setConnect(user);
             } else {
                 throw new MessageDeliveryException("UNAUTHORIZED");
             }
         }
-
         else if (StompCommand.DISCONNECT == accessor.getCommand()) {
             if(accessor.getUser() != null) {
                 playerLifeCycleService.setDisconnect(accessor.getUser());

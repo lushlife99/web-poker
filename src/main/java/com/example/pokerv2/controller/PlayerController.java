@@ -19,10 +19,11 @@ public class PlayerController {
 
     private final PlayerLifeCycleService playerLifeCycleService;
 
-    @PostMapping("/connect/{playerId}")
-    public ResponseEntity getPlayingBoardContext(@PathVariable Long playerId, Principal principal) {
-        playerLifeCycleService.setConnect(playerId, principal);
+//    @PostMapping("/connect/{playerId}")
+//    public ResponseEntity getPlayingBoardContext(@PathVariable Long playerId, Principal principal) {
+//        playerLifeCycleService.setConnect(playerId, principal);
+//
+//        return new ResponseEntity(HttpStatus.OK);
+//    }
 
-        return new ResponseEntity(HttpStatus.OK);
-    }
 }

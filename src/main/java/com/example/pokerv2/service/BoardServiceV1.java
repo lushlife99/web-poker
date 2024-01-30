@@ -18,16 +18,13 @@ import com.example.pokerv2.repository.PlayerRepository;
 import com.example.pokerv2.repository.UserRepository;
 import com.example.pokerv2.utils.HandCalculatorUtils;
 import com.example.pokerv2.utils.PotDistributorUtils;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.Hibernate;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
@@ -43,8 +40,6 @@ public class BoardServiceV1 {
     private final SimpMessagingTemplate simpMessagingTemplate;
     private static final int MAX_PLAYER = 6;
     private final static String TOPIC_PREFIX = "/topic/board/";
-    private final static int RESULT_ANIMATION_DELAY = 5;
-    private final static int ACTION_TIME = 10;
 
     /**
      * join - 24/01/04 chan
@@ -106,19 +101,19 @@ public class BoardServiceV1 {
 
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public void action(Long boardId) {
+    public Board action(Long boardId) {
 
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
         int nextActionPos = getNextActionPos(board);
-        System.out.println("transaction : " + TransactionSynchronizationManager.isActualTransactionActive());
         if (nextActionPos == -1) {
             if (!isGameEnd(boardId)) {
                 nextPhase(board);
                 if (board.getPhaseStatus() == PhaseStatus.SHOWDOWN) {
-                    return;
+
+                } else {
+                    simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), new BoardDto(board)));
                 }
-                simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), new BoardDto(board)));
             }
         } else {
             int nextActionIdx = getPlayerIdxByPos(board, nextActionPos);
@@ -128,15 +123,11 @@ public class BoardServiceV1 {
             board.setActionPos(nextActionPlayer.getPosition().getPosNum());
             simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_ACTION.getDetail(), new BoardDto(board)));
         }
+
+        return board;
     }
 
-    public static void waitDisconnectPlayer() {
-        try {
-            Thread.sleep(ACTION_TIME * 1000);
-        } catch (InterruptedException e) {
-            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
-        }
-    }
+
 
     @Transactional
     public void setPlayerDisconnectFold(Long boardId) {
@@ -207,25 +198,6 @@ public class BoardServiceV1 {
         board.setBettingSize(boardDto.getBettingSize());
         boardRepository.save(board);
     }
-
-    private boolean isActionable(Board board) {
-
-        List<Player> players = board.getPlayers();
-        int actionableCount = 0;
-
-        for (int i = 0; i < board.getTotalPlayer(); i++) {
-            Player player = players.get(i);
-            if (player.getStatus() == PlayerStatus.PLAY || player.getStatus() == PlayerStatus.DISCONNECT_PLAYED) {
-                actionableCount++;
-            }
-        }
-
-        if (actionableCount < 2) {
-            return false;
-        }
-        return true;
-    }
-
     public int getNextActionPos(Board board) {
         List<Player> players = board.getPlayers();
         int currentActPlayerIdx = getPlayerIdxByPos(board, board.getActionPos());
@@ -330,7 +302,7 @@ public class BoardServiceV1 {
     }
 
     @Transactional
-    public BoardDto winOnePlayer(Long boardId) {
+    public int winOnePlayer(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
         BoardDto boardDto = new BoardDto(board);
@@ -353,17 +325,8 @@ public class BoardServiceV1 {
         }
 
         boardRepository.save(board);
-
         simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.GAME_END.getDetail(), boardDto));
-
-        try {
-            Thread.sleep(RESULT_ANIMATION_DELAY * 1000);
-        } catch (InterruptedException e) {
-            e.getStackTrace();
-        }
-
-
-        return boardDto;
+        return 1;
     }
 
     /**
@@ -374,7 +337,7 @@ public class BoardServiceV1 {
      * 3. 팟 분배하기 (사이드 팟 생각)
      */
     @Transactional
-    public BoardDto showDown(Long boardId) {
+    public int showDown(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         refundOverBet(board);
         BoardDto boardDto = determineWinner(board);
@@ -388,12 +351,7 @@ public class BoardServiceV1 {
             }
         }
 
-        try {
-            Thread.sleep(RESULT_ANIMATION_DELAY * winnerCount * 1000);
-        } catch (InterruptedException e) {
-            e.getStackTrace();
-        }
-        return boardDto;
+        return winnerCount;
     }
 
     private static BoardDto determineWinner(Board board) {
@@ -492,8 +450,6 @@ public class BoardServiceV1 {
             //call
         } else throw new CustomException(ErrorCode.BAD_REQUEST);
     }
-
-
     @Transactional()
     public Player buyIn(Board board, User user, int bb) {
 
@@ -621,6 +577,7 @@ public class BoardServiceV1 {
         }
     }
 
+    @Transactional
     public BoardDto get(Long boardId, Principal principal) {
         User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
@@ -634,7 +591,6 @@ public class BoardServiceV1 {
 
         if (!isAuthenticated)
             return null;
-
         return new BoardDto(board);
     }
 

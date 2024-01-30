@@ -59,7 +59,7 @@ public class PotDistributorUtils {
     private static void distributeOnePlayer(BoardDto boardDto, int winPlayerIdx) {
         List<PlayerDto> players = boardDto.getPlayers();
         PlayerDto winPlayer = players.get(winPlayerIdx);
-        List<Integer> totalCallSize = boardDto.getTotalCallSize();
+        List<Integer> totalCallSize = new ArrayList<>(boardDto.getTotalCallSize());
         int wpTotalCallSize = totalCallSize.get(winPlayerIdx);
         for(int j = winPlayerIdx +1; j < boardDto.getTotalPlayer(); j++) {
             PlayerDto losePlayer = players.get(j);
@@ -71,7 +71,6 @@ public class PotDistributorUtils {
             else {
                 takePotAmount = lpTotalCallSize;
             }
-
             winPlayer.setMoney(winPlayer.getMoney() + takePotAmount);
             totalCallSize.set(j, totalCallSize.get(j) - takePotAmount);
             boardDto.setPot(boardDto.getPot() - takePotAmount);
@@ -89,7 +88,7 @@ public class PotDistributorUtils {
         List<Integer> winPlayerTotalCallSize = new ArrayList<>();
 
         List<PlayerDto> players = boardDto.getPlayers();
-        List<Integer> totalCallSize = boardDto.getTotalCallSize();
+        List<Integer> totalCallSize = new ArrayList<>(boardDto.getTotalCallSize());
 
         for(int i = firstPlayerIdx; i < players.size(); i++){
             PlayerDto playerDto = players.get(i);

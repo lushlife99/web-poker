@@ -22,6 +22,9 @@ public class GameHandleService {
     private final BoardServiceV1 boardServiceV1;
     private final ActionService actionService;
     private final BoardRepository boardRepository;
+    private final static int ACTION_TIME = 10;
+    private final static int RESULT_ANIMATION_TIME = 5;
+
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void action(BoardDto boardDto, String option, String userId) {
@@ -29,8 +32,7 @@ public class GameHandleService {
         Board board = boardServiceV1.saveBoardChanges(boardDto, option, userId);
 
         while(true) {
-            System.out.println("GameHandleService.action");
-            boardServiceV1.action(board.getId());
+            board = boardServiceV1.action(board.getId());
 
             if(boardServiceV1.isGameEnd(board.getId()) || board.getPhaseStatus() == PhaseStatus.SHOWDOWN) {
                 endGame(board.getId());
@@ -41,7 +43,7 @@ public class GameHandleService {
                 break;
             }
 
-            BoardServiceV1.waitDisconnectPlayer();
+            waitDisconnectPlayer();
 
             if(boardServiceV1.isActionPlayerConnect(board.getId())) {
                 break;
@@ -50,7 +52,6 @@ public class GameHandleService {
             }
         }
     }
-
     public void exitPlayer(BoardDto boardDto, String userId) {
 
         boardServiceV1.sitOut(boardDto, userId);
@@ -64,11 +65,18 @@ public class GameHandleService {
 
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         boardServiceV1.initPhase(board.getId());
+        int resultAnimationCount = 0;
 
         if (boardServiceV1.isGameEnd(board.getId())) {
-            boardServiceV1.winOnePlayer(board.getId());
+            resultAnimationCount = boardServiceV1.winOnePlayer(board.getId());
         } else {
-            boardServiceV1.showDown(board.getId());
+            resultAnimationCount = boardServiceV1.showDown(board.getId());
+        }
+
+        try {
+            Thread.sleep(resultAnimationCount * RESULT_ANIMATION_TIME * 1000);
+        } catch (InterruptedException e) {
+            e.getStackTrace();
         }
 
         boardServiceV1.initBoard(board.getId());
@@ -86,6 +94,13 @@ public class GameHandleService {
         }
     }
 
+    public static void waitDisconnectPlayer() {
+        try {
+            Thread.sleep(ACTION_TIME * 1000);
+        } catch (InterruptedException e) {
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     /**
      * endGameTest
@@ -98,6 +113,7 @@ public class GameHandleService {
         board.setPhaseStatus(PhaseStatus.SHOWDOWN);
         endGame(boardId);
     }
+
 
 
 }

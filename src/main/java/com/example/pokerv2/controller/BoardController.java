@@ -23,7 +23,6 @@ public class BoardController {
 
     @GetMapping("/context")
     public List<BoardDto> getContext(Principal principal) {
-        System.out.println("BoardController.getContext");
         return boardServiceV1.getContext(principal);
     }
 
@@ -45,8 +44,7 @@ public class BoardController {
         return boardServiceV1.get(boardId, principal);
     }
 
-//    @MessageMapping("/board/exit")
-    @PutMapping("/exit")
+    @MessageMapping("/board/exit")
     public void exitGame(@RequestBody BoardDto board, Principal principal) {
         gameHandleService.exitPlayer(board, principal.getName());
     }
