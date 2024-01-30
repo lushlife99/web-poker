@@ -48,18 +48,19 @@ public class PlayerLifeCycleService {
 
 
     @Transactional
-    public void setConnect(Long playerId, Principal principal) {
+    public void setConnect(Principal principal) {
         User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-        Player player = playerRepository.findById(playerId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        List<Player> playerList = user.getPlayerList();
 
-        if(!player.getUser().equals(user))
-            throw new CustomException(ErrorCode.BAD_REQUEST);
-
-        if(player.getStatus() == PlayerStatus.DISCONNECT_ALL_IN) {
-            player.setStatus(PlayerStatus.ALL_IN);
-        }
-        else if(player.getStatus() == PlayerStatus.DISCONNECT_PLAYED) {
-            player.setStatus(PlayerStatus.PLAY);
+        for (Player player : playerList) {
+            if(player.getStatus() == PlayerStatus.DISCONNECT_ALL_IN) {
+                player.setStatus(PlayerStatus.ALL_IN);
+            }
+            else if(player.getStatus() == PlayerStatus.DISCONNECT_PLAYED) {
+                player.setStatus(PlayerStatus.PLAY);
+            } else {
+                player.setStatus(PlayerStatus.FOLD);
+            }
         }
     }
 }

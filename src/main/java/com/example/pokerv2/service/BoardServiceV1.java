@@ -18,9 +18,7 @@ import com.example.pokerv2.repository.PlayerRepository;
 import com.example.pokerv2.repository.UserRepository;
 import com.example.pokerv2.utils.HandCalculatorUtils;
 import com.example.pokerv2.utils.PotDistributorUtils;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -40,11 +38,8 @@ public class BoardServiceV1 {
     private final UserRepository userRepository;
     private final PlayerRepository playerRepository;
     private final SimpMessagingTemplate simpMessagingTemplate;
-    private final EntityManager entityManager;
     private static final int MAX_PLAYER = 6;
     private final static String TOPIC_PREFIX = "/topic/board/";
-    private final static int RESULT_ANIMATION_DELAY = 5;
-    private final static int ACTION_TIME = 10;
 
     /**
      * join - 24/01/04 chan
@@ -74,14 +69,6 @@ public class BoardServiceV1 {
         return new BoardDto(board);
     }
 
-
-    @Transactional
-    public void endGameTest(Long boardId) {
-        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-        board.setPhaseStatus(PhaseStatus.SHOWDOWN);
-        endGame(board);
-    }
-
     /**
      * 24/01/10 chan
      * <p>
@@ -108,34 +95,25 @@ public class BoardServiceV1 {
      * 모두 폴드라면 -> 베팅을 한 플레이어 승리.
      * all-in인 유저가 존재한다면 : 승자를 가려야 함. show-down 진행
      *
-     * @param boardDto
+     * @param boardId
+     * @return 다음 액션이 존재하는지 boolean 리턴.
      */
 
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public boolean action(BoardDto boardDto) {
+    public Board action(Long boardId) {
 
-        Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
         int nextActionPos = getNextActionPos(board);
-
-        int gameSeq = boardDto.getGameSeq();
         if (nextActionPos == -1) {
-            if (isGameEnd(board)) {
-                endGame(board);
-                return true;
-            } else {
+            if (!isGameEnd(boardId)) {
                 nextPhase(board);
-                Player nextActionPlayer = players.get(getPlayerIdxByPos(board, board.getActionPos()));
                 if (board.getPhaseStatus() == PhaseStatus.SHOWDOWN) {
-                    endGame(board);
-                } else if(nextActionPlayer.getStatus().getStatusNum() <= PlayerStatus.FOLD.getStatusNum()){
-                    boardDto = new BoardDto(board);
-                    return false;
+
                 } else {
                     simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), new BoardDto(board)));
                 }
-                return true;
             }
         } else {
             int nextActionIdx = getPlayerIdxByPos(board, nextActionPos);
@@ -144,32 +122,28 @@ public class BoardServiceV1 {
             board.setLastActionTime(LocalDateTime.now());
             board.setActionPos(nextActionPlayer.getPosition().getPosNum());
             simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_ACTION.getDetail(), new BoardDto(board)));
-
-            if (nextActionPlayer.getStatus() == PlayerStatus.DISCONNECT_PLAYED) {
-                boardDto = new BoardDto(board);
-                return false;
-            } else {
-                return true;
-            }
         }
+
+        return board;
     }
 
-    @Transactional
-    public void setPlayerDisconnectFold(BoardDto boardDto) {
 
-        Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+
+    @Transactional
+    public void setPlayerDisconnectFold(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Player player = board.getPlayers().get(getPlayerIdxByPos(board, board.getActionPos()));
         player.setStatus(PlayerStatus.DISCONNECT_FOLD);
     }
 
     @Transactional
-    public boolean isActionPlayerConnect(BoardDto boardDto) {
-        Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+    public boolean isActionPlayerConnect(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
         int actionPlayerIdx = getPlayerIdxByPos(board, board.getActionPos());
         Player player = players.get(actionPlayerIdx);
 
-        if(player.getStatus().getStatusNum() >= PlayerStatus.FOLD.getStatusNum())
+        if (player.getStatus().getStatusNum() >= PlayerStatus.FOLD.getStatusNum())
             return true;
 
         return false;
@@ -177,8 +151,6 @@ public class BoardServiceV1 {
 
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public Board getRecentBoard(Long boardId) {
-        entityManager.clear();
-        System.out.println("BoardServiceV1.getRecentBoard");
         return boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
     }
 
@@ -188,6 +160,7 @@ public class BoardServiceV1 {
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         if (!isSeatInBoard(board, userId))
             throw new CustomException(ErrorCode.BAD_REQUEST);
+
 
         for (PlayerDto playerDto : boardDto.getPlayers()) {
             Player p = playerRepository.findById(playerDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
@@ -210,30 +183,21 @@ public class BoardServiceV1 {
                         p.setStatus(PlayerStatus.PLAY);
                     }
                 }
+                break;
             }
         }
-        board.changeBoardStatus(boardDto);
+        saveBoardChanges(board, boardDto);
         return board;
     }
 
-    private boolean isActionable(Board board) {
 
-        List<Player> players = board.getPlayers();
-        int actionableCount = 0;
-
-        for (int i = 0; i < board.getTotalPlayer(); i++) {
-            Player player = players.get(i);
-            if (player.getStatus() == PlayerStatus.PLAY || player.getStatus() == PlayerStatus.DISCONNECT_PLAYED) {
-                actionableCount++;
-            }
-        }
-
-        if (actionableCount < 2) {
-            return false;
-        }
-        return true;
+    public void saveBoardChanges(Board board, BoardDto boardDto) {
+        board.setPot(boardDto.getPot());
+        board.setBettingPos(boardDto.getBettingPos());
+        board.setActionPos(boardDto.getActionPos());
+        board.setBettingSize(boardDto.getBettingSize());
+        boardRepository.save(board);
     }
-
     public int getNextActionPos(Board board) {
         List<Player> players = board.getPlayers();
         int currentActPlayerIdx = getPlayerIdxByPos(board, board.getActionPos());
@@ -256,73 +220,30 @@ public class BoardServiceV1 {
     /**
      * GameEnd를 만족하는 상황인지 체크한다.
      *
-     * @param board
+     * @param boardId
      * @return
      */
-    private boolean isGameEnd(Board board) {
+    @Transactional
+    public boolean isGameEnd(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        int actionableCount = 0;
         for (Player player : board.getPlayers()) {
-            int foldCount = 0;
-            if (player.getStatus() == PlayerStatus.FOLD || player.getStatus() == PlayerStatus.DISCONNECT_FOLD) {
-                foldCount++;
-            }
-
-            if (foldCount == board.getTotalPlayer() - 1) {
-                return true;
+            if (player.getStatus() == PlayerStatus.PLAY || player.getStatus() == PlayerStatus.DISCONNECT_PLAYED) {
+                actionableCount++;
             }
         }
+
+        if (actionableCount < 2) {
+            return true;
+        }
+
         return false;
     }
 
-//    /**
-//     * @param board
-//     * @param posNum
-//     * @return 타임아웃 로직을 하고 게임이 끝났다면 true 리턴
-//     */
-//    @Transactional(propagation = Propagation.REQUIRES_NEW)
-//    public void timeOutPlayer(Board board, int posNum) {
-//
-//        List<Player> players = board.getPlayers();
-//        Player timeOutPlayer = players.get(getPlayerIdxByPos(board, posNum));
-//        timeOutPlayer.setStatus(PlayerStatus.DISCONNECT_FOLD);
-//        boardRepository.saveAndFlush(board);
-//    }
 
-
-    /**
-     * endGame
-     * <p>
-     * 게임을 종료시킨다.
-     * 1. if 한명 빼고 다 폴드 -> 남은 플레이어 승리
-     * 2. fold하지 않은 플레이어가 두명 이상 -> 쇼다운
-     *
-     * @param board
-     */
-    public void endGame(Board board) {
-
-        initPhase(board);
-        List<Player> players = board.getPlayers();
-
-        if (isGameEnd(board)) {
-            winOnePlayer(board);
-        } else {
-            showDown(board);
-        }
-
-        initBoard(board);
-
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.getStackTrace();
-        }
-
-        if (board.getTotalPlayer() >= 2) {
-            startGame(board.getId());
-        }
-        boardRepository.save(board);
-    }
-
-    private void initBoard(Board board) {
+    @Transactional
+    public void initBoard(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         board.setPot(0);
         board.setBettingSize(0);
         board.setBettingPos(0);
@@ -338,8 +259,10 @@ public class BoardServiceV1 {
         for (int i = 0; i < board.getTotalPlayer(); i++) {
             Player player = players.get(i);
             if (player.getStatus().getStatusNum() < PlayerStatus.FOLD.getStatusNum()) {
-                dropDisconnectedPlayer(board, player);
+                User user = player.getUser();
+                user.setMoney(user.getMoney() + player.getMoney());
                 disConnectedPlayers.add(player);
+
             } else {
                 player.setCard1(0);
                 player.setCard2(0);
@@ -347,10 +270,11 @@ public class BoardServiceV1 {
                 player.setStatus(PlayerStatus.FOLD);
             }
         }
-        players.remove(disConnectedPlayers);
+        players.removeAll(disConnectedPlayers);
         board.setTotalPlayer(players.size());
         List<Integer> totalCallSizeList = new ArrayList<>(Arrays.asList(0, 0, 0, 0, 0, 0));
         board.setTotalCallSize(totalCallSizeList);
+        playerRepository.deleteAll(disConnectedPlayers);
         boardRepository.save(board);
         simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.INIT_BOARD.getDetail(), new BoardDto(board)));
     }
@@ -377,7 +301,9 @@ public class BoardServiceV1 {
         overBetPlayer.setPhaseCallSize(maxCallSize);
     }
 
-    public BoardDto winOnePlayer(Board board) {
+    @Transactional
+    public int winOnePlayer(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
         BoardDto boardDto = new BoardDto(board);
         for (int i = 0; i < players.size(); i++) {
@@ -399,17 +325,8 @@ public class BoardServiceV1 {
         }
 
         boardRepository.save(board);
-
         simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.GAME_END.getDetail(), boardDto));
-
-        try {
-            Thread.sleep(RESULT_ANIMATION_DELAY * 1000);
-        } catch (InterruptedException e) {
-            e.getStackTrace();
-        }
-
-
-        return boardDto;
+        return 1;
     }
 
     /**
@@ -419,8 +336,9 @@ public class BoardServiceV1 {
      * 2. 승자 가리기
      * 3. 팟 분배하기 (사이드 팟 생각)
      */
-    public BoardDto showDown(Board board) {
-
+    @Transactional
+    public int showDown(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         refundOverBet(board);
         BoardDto boardDto = determineWinner(board);
         PotDistributorUtils.distribute(boardDto);
@@ -432,12 +350,8 @@ public class BoardServiceV1 {
                 winnerCount++;
             }
         }
-        try {
-            Thread.sleep(RESULT_ANIMATION_DELAY * winnerCount * 1000);
-        } catch (InterruptedException e) {
-            e.getStackTrace();
-        }
-        return boardDto;
+
+        return winnerCount;
     }
 
     private static BoardDto determineWinner(Board board) {
@@ -467,12 +381,14 @@ public class BoardServiceV1 {
      * <p>
      * 페이즈가 끝났을 때 각 플레이어들의 베팅을 팟에 모음.
      *
-     * @param board
+     * @param boardId
      */
-    public void initPhase(Board board) {
+    @Transactional
+    public void initPhase(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
         List<Integer> totalCallSize = board.getTotalCallSize();
-        for(int i = 0; i < board.getTotalPlayer(); i++) {
+        for (int i = 0; i < board.getTotalPlayer(); i++) {
             Player player = players.get(i);
             totalCallSize.set(i, totalCallSize.get(i) + player.getPhaseCallSize());
             board.setPot(board.getPot() + player.getPhaseCallSize());
@@ -480,7 +396,6 @@ public class BoardServiceV1 {
         }
 
         board.setBettingSize(0);
-
     }
 
     /**
@@ -490,13 +405,15 @@ public class BoardServiceV1 {
      */
     @Transactional
     public void nextPhase(Board board) {
-        beforeNextPhase(board);
 
         if (board.getPhaseStatus() == PhaseStatus.PRE_FLOP) {
+            beforeNextPhase(board);
             board.setPhaseStatus(PhaseStatus.FLOP);
         } else if (board.getPhaseStatus() == PhaseStatus.FLOP) {
+            beforeNextPhase(board);
             board.setPhaseStatus(PhaseStatus.TURN);
         } else if (board.getPhaseStatus() == PhaseStatus.TURN) {
+            beforeNextPhase(board);
             board.setPhaseStatus(PhaseStatus.RIVER);
         } else if (board.getPhaseStatus() == PhaseStatus.RIVER) {
             board.setPhaseStatus(PhaseStatus.SHOWDOWN);
@@ -512,7 +429,7 @@ public class BoardServiceV1 {
     private Board beforeNextPhase(Board board) {
         List<Player> players = board.getPlayers();
         int betPos = players.get((getPlayerIdxByPos(board, board.getBtn()) + 1) % players.size()).getPosition().getPosNum();
-        initPhase(board);
+        initPhase(board.getId());
         board.setActionPos(betPos);
         board.setBettingPos(betPos);
         board.setLastActionTime(LocalDateTime.now());
@@ -533,8 +450,6 @@ public class BoardServiceV1 {
             //call
         } else throw new CustomException(ErrorCode.BAD_REQUEST);
     }
-
-
     @Transactional()
     public Player buyIn(Board board, User user, int bb) {
 
@@ -662,6 +577,7 @@ public class BoardServiceV1 {
         }
     }
 
+    @Transactional
     public BoardDto get(Long boardId, Principal principal) {
         User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
@@ -671,16 +587,14 @@ public class BoardServiceV1 {
                 isAuthenticated = true;
                 break;
             }
-
         }
 
-        if (isAuthenticated)
-            return new BoardDto(board);
-
-        return null;
+        if (!isAuthenticated)
+            return null;
+        return new BoardDto(board);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public List<BoardDto> getContext(Principal principal) {
         User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> playerList = user.getPlayerList();
@@ -688,10 +602,8 @@ public class BoardServiceV1 {
         for (Player player : playerList) {
             context.add(new BoardDto(player.getBoard()));
         }
-
         return context;
     }
-
 
     @Transactional
     public void sitIn(Board board, Player joinPlayer) {
@@ -714,13 +626,6 @@ public class BoardServiceV1 {
                 break;
             }
         }
-    }
-
-    @Transactional
-    public void dropDisconnectedPlayer(Board board, Player player) {
-        User user = player.getUser();
-        user.setMoney(user.getMoney() + player.getMoney());
-
     }
 
     public void setBtnPrevPlayer(Board board) {
@@ -755,46 +660,39 @@ public class BoardServiceV1 {
         User user = userRepository.findByUserId(userId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
-        int actionablePlayerCount = 0;
 
-        Player exitPlayer;
+        Optional<Player> exitPlayer = Optional.empty();
         for (Player player : players) {
             if (player.getUser().equals(user)) {
-                exitPlayer = playerRepository.findById(player.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
 
-                if (exitPlayer.getPosition().getPosNum() == board.getBtn()) {
-                    setBtnPrevPlayer(board);
-                }
-
-                if (board.getBettingPos() == exitPlayer.getPosition().getPosNum()) {
-                    setBettingPosNextPlayer(board);
-                }
-
-                user.setMoney(user.getMoney() + exitPlayer.getMoney());
-                if (board.getPhaseStatus() != PhaseStatus.WAITING && player.getPhaseCallSize() != 0) {
-                    board.setPot(board.getPot() + player.getPhaseCallSize());
-                }
-
-                players.remove(exitPlayer);
-                board.setPlayers(players);
-                board.setTotalPlayer(board.getTotalPlayer() - 1);
-                playerRepository.delete(exitPlayer);
-                boardRepository.save(board);
+                exitPlayer = Optional.of(playerRepository.findById(player.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST)));
                 break;
             }
         }
 
-        BoardDto boardDto1 = new BoardDto(board);
-        simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.PLAYER_EXIT.getDetail(), boardDto1));
+        if (exitPlayer.isPresent()) {
+            Player player = exitPlayer.get();
+            if (player.getPosition().getPosNum() == board.getBtn()) {
+                setBtnPrevPlayer(board);
+            }
 
-        for (Player player : players) {
-            if (player.getStatus() == PlayerStatus.PLAY || player.getStatus() == PlayerStatus.DISCONNECT_PLAYED)
-                actionablePlayerCount++;
+            if (board.getBettingPos() == player.getPosition().getPosNum()) {
+                setBettingPosNextPlayer(board);
+            }
+
+            user.setMoney(user.getMoney() + player.getMoney());
+            if (board.getPhaseStatus() != PhaseStatus.WAITING && player.getPhaseCallSize() != 0) {
+                board.setPot(board.getPot() + player.getPhaseCallSize());
+            }
+
+            players.remove(player);
+            board.setPlayers(players);
+            board.setTotalPlayer(board.getTotalPlayer() - 1);
+            playerRepository.delete(player);
+            boardRepository.save(board);
         }
 
-        if (actionablePlayerCount == 1) {
-            endGame(board);
-        }
+        simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.PLAYER_EXIT.getDetail(), new BoardDto(board)));
     }
 
     @Transactional

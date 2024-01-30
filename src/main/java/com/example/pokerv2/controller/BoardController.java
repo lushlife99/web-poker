@@ -1,18 +1,13 @@
 package com.example.pokerv2.controller;
 
 import com.example.pokerv2.dto.BoardDto;
-import com.example.pokerv2.error.CustomException;
-import com.example.pokerv2.error.ErrorCode;
-import com.example.pokerv2.model.Board;
-import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.service.BoardServiceV1;
+import com.example.pokerv2.service.handleService.GameHandleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -24,7 +19,7 @@ import java.util.List;
 public class BoardController {
 
     private final BoardServiceV1 boardServiceV1;
-    private final BoardRepository boardRepository;
+    private final GameHandleService gameHandleService;
 
     @GetMapping("/context")
     public List<BoardDto> getContext(Principal principal) {
@@ -40,26 +35,7 @@ public class BoardController {
     @MessageMapping("/board/action/{option}")
     public void action(@RequestBody BoardDto boardDto, @DestinationVariable String option, Principal principal){
 
-        String userId = principal.getName();
-        boardServiceV1.saveBoardChanges(boardDto, option, principal.getName());
-
-        while(true) {
-            if(boardServiceV1.action(boardDto)) {
-                break;
-            }
-            try {
-                Thread.sleep(10 * 1000);
-            } catch (InterruptedException e) {
-                throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
-            }
-
-            if(boardServiceV1.isActionPlayerConnect(boardDto)) {
-                break;
-            } else {
-                boardServiceV1.setPlayerDisconnectFold(boardDto);
-            }
-        }
-
+        gameHandleService.action(boardDto, option, principal.getName());
     }
 
 
@@ -68,10 +44,9 @@ public class BoardController {
         return boardServiceV1.get(boardId, principal);
     }
 
-    @PutMapping("/exit")
-    public ResponseEntity exitGame(@RequestBody BoardDto board, Principal principal) {
-        boardServiceV1.sitOut(board, principal.getName());
-        return new ResponseEntity(HttpStatus.OK);
+    @MessageMapping("/board/exit")
+    public void exitGame(@RequestBody BoardDto board, Principal principal) {
+        gameHandleService.exitPlayer(board, principal.getName());
     }
 
     /**
@@ -92,9 +67,7 @@ public class BoardController {
 
     @PostMapping("/end/{boardId}")
     public ResponseEntity endGame(@PathVariable Long boardId) {
-        boardServiceV1.endGameTest(boardId);
+        gameHandleService.endGameTest(boardId);
         return new ResponseEntity(HttpStatus.OK);
     }
-
-
 }
