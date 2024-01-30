@@ -55,7 +55,7 @@ public class BoardDto {
         for (Player player : pList) {
             pDtoList.add(new PlayerDto(player));
         }
-        this.totalCallSize = board.getTotalCallSize();
+        this.totalCallSize = List.copyOf(board.getTotalCallSize());
         this.lastActionTime = board.getLastActionTime();
         this.players = pDtoList;
     }
