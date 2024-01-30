@@ -24,7 +24,6 @@ public class HandHistoryDto {
     public HandHistoryDto(HandHistory handHistory) {
         this.id = handHistory.getId();
         this.actionList = handHistory.getActionList();
-        this.actionCount = handHistory.getActionCount();
         this.potAmountPf = handHistory.getPotAmountPf();
         this.potAmountFlop = handHistory.getPotAmountFlop();
         this.potAmountTurn = handHistory.getPotAmountTurn();

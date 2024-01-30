@@ -18,6 +18,7 @@ public class Action {
     @Id @GeneratedValue
     private Long id;
     private int actionNo;
+    private Long userId;
 
     @Enumerated(EnumType.ORDINAL)
     private Position position;
@@ -26,5 +27,4 @@ public class Action {
     private String detail;
     @ManyToOne
     private HandHistory handHistory;
-
 }

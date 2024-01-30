@@ -43,6 +43,9 @@ public class Board {
 
     private LocalDateTime lastActionTime;
 
+    @OneToOne
+    private HandHistory handHistory;
+
     @OneToMany(mappedBy = "board", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @OrderBy("position asc")
     @Builder.Default

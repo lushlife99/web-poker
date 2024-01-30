@@ -28,13 +28,16 @@ public class Hud {
      *
      * threeBet : 첫번째 레이즈에 한번 더 레이즈를 하는게 3Bet, 3Bet에 한번 더 레이즈를 하는게 4Bet.
      * 3bet 이상 하는 정도
+     * 3bet-count / Total Opportunities to Call or Raise After an Initial Bet
      *
      * wtsd : Went To Show Down
      * 쇼다운까지 가는 정도
+     * wtsd / wtf
      *
      * wsd : Won at Show Down
      * 쇼다운에서 이기는 정도
-     *
+     * (wsd / wtsd)
+
      */
 
     @Id @GeneratedValue
@@ -47,10 +50,7 @@ public class Hud {
     private int threeBet;
     private int wtsd;
     private int wsd;
-
     private int totalHands;
     private int pfAggressiveCnt;
-
-
-
+    private int wtf;
 }
