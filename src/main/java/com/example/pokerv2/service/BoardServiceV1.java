@@ -287,7 +287,7 @@ public class BoardServiceV1 {
         overBetPlayer.setPhaseCallSize(maxCallSize);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public int winOnePlayer(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         board.setPhaseStatus(PhaseStatus.END_GAME);
@@ -323,7 +323,7 @@ public class BoardServiceV1 {
      * 2. 승자 가리기
      * 3. 팟 분배하기 (사이드 팟 생각)
      */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public int showDown(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         board.setPhaseStatus(PhaseStatus.SHOWDOWN);
@@ -371,7 +371,7 @@ public class BoardServiceV1 {
      *
      * @param boardId
      */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public void initPhase(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
