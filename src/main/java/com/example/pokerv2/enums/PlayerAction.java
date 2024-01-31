@@ -14,5 +14,4 @@ public enum PlayerAction {
     ALL_IN_RAISE("allInRaise");
     private final String actionDetail;
 
-
 }

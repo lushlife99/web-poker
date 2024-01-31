@@ -38,7 +38,6 @@ public class BoardController {
         gameHandleService.action(boardDto, option, principal.getName());
     }
 
-
     @GetMapping("/{boardId}")
     public BoardDto get(@PathVariable Long boardId, Principal principal) {
         return boardServiceV1.get(boardId, principal);

@@ -1,5 +1,6 @@
 package com.example.pokerv2.service;
 
+import com.example.pokerv2.dto.HandHistoryDto;
 import com.example.pokerv2.enums.Position;
 import com.example.pokerv2.error.CustomException;
 import com.example.pokerv2.error.ErrorCode;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -42,6 +44,19 @@ public class HandHistoryService {
         userHandHistoryRepository.saveAll(connectionList);
         board.setHandHistory(handHistory);
         return handHistory;
+    }
+
+    public List<HandHistoryDto> get(String userId) {
+        User user = userRepository.findByUserId(userId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        List<UserHandHistory> connectionList = user.getHandHistoryList();
+        List<HandHistoryDto> handHistoryList = new ArrayList<>();
+
+        for (UserHandHistory userHandHistory : connectionList) {
+            HandHistory handHistory = userHandHistory.getHandHistory();
+
+        }
+
+        return handHistoryList;
     }
 
 }

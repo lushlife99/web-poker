@@ -118,9 +118,10 @@ public class GameHandleService {
         }
 
         BoardDto boardDto = boardServiceV1.getRecentBoard(board.getId());
-
+        System.out.println("GameHandleService.endGame");
+        System.out.println(boardDto);
         if (boardDto.getTotalPlayer() >= 2) {
-            boardServiceV1.startGame(board.getId());
+            startGame(board.getId());
         }
     }
 
