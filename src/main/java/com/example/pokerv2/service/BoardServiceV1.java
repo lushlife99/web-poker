@@ -389,10 +389,12 @@ public class BoardServiceV1 {
     /**
      * 다음 페이즈를 시작한다.
      *
-     * @param board
+     * @param boardId
      */
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
-    public BoardDto nextPhase(Board board) {
+    public BoardDto nextPhase(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+
 
         if (board.getPhaseStatus() == PhaseStatus.PRE_FLOP) {
             prepareNextPhase(board);

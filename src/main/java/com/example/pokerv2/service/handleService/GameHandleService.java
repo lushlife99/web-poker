@@ -34,6 +34,7 @@ public class GameHandleService {
     private final static int RESULT_ANIMATION_TIME = 5;
 
 
+
     public void action(BoardDto boardDto, String option, String userId) {
 
 //        actionService.saveAction(boardDto, option, userId);
@@ -52,7 +53,7 @@ public class GameHandleService {
             if (board.getActionPos() == -1) {
                 System.out.println(3);
 
-                boardDto = boardServiceV1.nextPhase(board);
+                boardDto = boardServiceV1.nextPhase(board.getId());
                 if (board.getPhaseStatus() != PhaseStatus.SHOWDOWN) {
                     System.out.println(4);
 
