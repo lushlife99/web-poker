@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -34,7 +35,7 @@ public class GameHandleService {
     private final static int RESULT_ANIMATION_TIME = 5;
 
 
-
+    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public void action(BoardDto boardDto, String option, String userId) {
 
 //        actionService.saveAction(boardDto, option, userId);
