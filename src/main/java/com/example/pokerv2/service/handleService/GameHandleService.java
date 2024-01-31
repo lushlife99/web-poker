@@ -73,6 +73,7 @@ public class GameHandleService {
             }
 
             if(boardServiceV1.isActionPlayerConnect(board.getId())) {
+                System.out.println(11);
                 break;
             }
 

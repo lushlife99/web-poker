@@ -45,7 +45,7 @@ public class BoardServiceV1 {
      * 3. Player 입장.
      */
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public BoardDto join(int requestBb, Principal principal) {
         User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Board board;
