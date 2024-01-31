@@ -29,6 +29,7 @@ public class HandHistoryDto {
     private int communityCard4;
     private int communityCard5;
     private List<UserDto> userList = new ArrayList<>();
+    private List<Integer> posList = new ArrayList<>();
     private List<Integer> cardList = new ArrayList<>();
 
     public HandHistoryDto(HandHistory handHistory) {
@@ -38,7 +39,6 @@ public class HandHistoryDto {
             for (Action action : handHistory.getActionList()) {
                 actionList.add(new ActionDto(action));
             }
-
             this.potAmountPf = handHistory.getPotAmountPf();
             this.potAmountFlop = handHistory.getPotAmountFlop();
             this.potAmountTurn = handHistory.getPotAmountTurn();
