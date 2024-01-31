@@ -68,6 +68,7 @@ public class HandHistoryService {
 
         for (UserHandHistory userHandHistory : connectionList) {
             HandHistory handHistory = userHandHistory.getHandHistory();
+            handHistoryList.add(new HandHistoryDto(handHistory));
         }
 
         return handHistoryList;

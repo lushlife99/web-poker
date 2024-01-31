@@ -3,6 +3,7 @@ package com.example.pokerv2.dto;
 import com.example.pokerv2.enums.Position;
 import com.example.pokerv2.model.Action;
 import com.example.pokerv2.model.HandHistory;
+import com.example.pokerv2.model.UserHandHistory;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -37,7 +38,16 @@ public class HandHistoryDto {
         this.potAmountFlop = handHistory.getPotAmountFlop();
         this.potAmountTurn = handHistory.getPotAmountTurn();
         this.potAmountRiver = handHistory.getPotAmountRiver();
-
+        this.communityCard1 = handHistory.getCommunityCard1();
+        this.communityCard2 = handHistory.getCommunityCard2();
+        this.communityCard3 = handHistory.getCommunityCard3();
+        this.communityCard4 = handHistory.getCommunityCard4();
+        this.communityCard5 = handHistory.getCommunityCard5();
+        userList = new ArrayList<>();
+        for (UserHandHistory userHandHistory : handHistory.getUserList()) {
+            userList.add(new UserDto(userHandHistory.getUser()));
+        }
+        cardList = handHistory.getCardList();
     }
 
 }

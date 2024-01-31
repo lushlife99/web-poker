@@ -22,7 +22,7 @@ public class UserHandHistory {
     @ManyToOne
     @JoinColumn(name = "hand_history_id")
     private HandHistory handHistory;
-
     private int card1;
     private int card2;
+
 }
