@@ -121,7 +121,7 @@ public class BoardServiceV1 {
         return player.getUser().getUserId();
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public boolean isActionPlayerConnect(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
