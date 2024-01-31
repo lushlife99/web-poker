@@ -395,7 +395,6 @@ public class BoardServiceV1 {
     public BoardDto nextPhase(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
 
-
         if (board.getPhaseStatus() == PhaseStatus.PRE_FLOP) {
             prepareNextPhase(board);
             board.setPhaseStatus(PhaseStatus.FLOP);
