@@ -53,8 +53,6 @@ public class PlayerLifeCycleService {
         List<Player> playerList = user.getPlayerList();
 
         for (Player player : playerList) {
-            System.out.println("reconnected");
-            System.out.println(player.getUser().getUserId());
             if(player.getStatus() == PlayerStatus.DISCONNECT_ALL_IN) {
                 player.setStatus(PlayerStatus.ALL_IN);
             }

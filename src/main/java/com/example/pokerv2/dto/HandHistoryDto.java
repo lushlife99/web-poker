@@ -22,7 +22,7 @@ public class HandHistoryDto {
     private int potAmountFlop;
     private int potAmountTurn;
     private int potAmountRiver;
-    private Position btnPosition;
+    private int btnPosition;
     private int communityCard1;
     private int communityCard2;
     private int communityCard3;
@@ -33,30 +33,26 @@ public class HandHistoryDto {
     private List<Integer> cardList = new ArrayList<>();
 
     public HandHistoryDto(HandHistory handHistory) {
-        try {
-            this.id = handHistory.getId();
-            this.actionList = new ArrayList<>();
-            for (Action action : handHistory.getActionList()) {
-                actionList.add(new ActionDto(action));
-            }
-            this.potAmountPf = handHistory.getPotAmountPf();
-            this.potAmountFlop = handHistory.getPotAmountFlop();
-            this.potAmountTurn = handHistory.getPotAmountTurn();
-            this.potAmountRiver = handHistory.getPotAmountRiver();
-            this.communityCard1 = handHistory.getCommunityCard1();
-            this.communityCard2 = handHistory.getCommunityCard2();
-            this.communityCard3 = handHistory.getCommunityCard3();
-            this.communityCard4 = handHistory.getCommunityCard4();
-            this.communityCard5 = handHistory.getCommunityCard5();
-            userList = new ArrayList<>();
-            for (UserHandHistory userHandHistory : handHistory.getUserList()) {
-                userList.add(new UserDto(userHandHistory.getUser()));
-            }
-            cardList = handHistory.getCardList();
-        } catch (Exception e) {
-            System.out.println("HandHistoryDto.HandHistoryDto");
-            System.out.println(e.getMessage());
+        this.id = handHistory.getId();
+        this.actionList = new ArrayList<>();
+        for (Action action : handHistory.getActionList()) {
+            actionList.add(new ActionDto(action));
         }
+        this.btnPosition = handHistory.getBtnPosition();
+        this.potAmountPf = handHistory.getPotAmountPf();
+        this.potAmountFlop = handHistory.getPotAmountFlop();
+        this.potAmountTurn = handHistory.getPotAmountTurn();
+        this.potAmountRiver = handHistory.getPotAmountRiver();
+        this.communityCard1 = handHistory.getCommunityCard1();
+        this.communityCard2 = handHistory.getCommunityCard2();
+        this.communityCard3 = handHistory.getCommunityCard3();
+        this.communityCard4 = handHistory.getCommunityCard4();
+        this.communityCard5 = handHistory.getCommunityCard5();
+        userList = new ArrayList<>();
+        for (UserHandHistory userHandHistory : handHistory.getUserList()) {
+            userList.add(new UserDto(userHandHistory.getUser()));
+        }
+        cardList = handHistory.getCardList();
     }
 
 }

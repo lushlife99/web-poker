@@ -23,7 +23,8 @@ public class Action {
     private Position position;
     @Enumerated(EnumType.ORDINAL)
     private PhaseStatus phaseStatus;
-    private String detail;
+    @Builder.Default
+    private String detail="";
     @ManyToOne
     private HandHistory handHistory;
 }

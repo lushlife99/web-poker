@@ -1,7 +1,6 @@
 package com.example.pokerv2.service;
 
 import com.example.pokerv2.dto.HandHistoryDto;
-import com.example.pokerv2.enums.Position;
 import com.example.pokerv2.error.CustomException;
 import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.model.*;
@@ -12,17 +11,14 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class HandHistoryService {
 
     private final HandHistoryRepository handHistoryRepository;
-    private final ActionRepository actionRepository;
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
     private final UserHandHistoryRepository userHandHistoryRepository;
@@ -35,7 +31,7 @@ public class HandHistoryService {
         List<Integer> cardList = new ArrayList<>();
 
 
-        HandHistory handHistory = HandHistory.builder().board(board).btnPosition(Position.getPositionByNumber(board.getBtn())).cardList(cardList)
+        HandHistory handHistory = HandHistory.builder().board(board).cardList(cardList).btnPosition(board.getBtn())
                 .communityCard1(board.getCommunityCard1()).communityCard2(board.getCommunityCard2()).communityCard3(board.getCommunityCard3()).communityCard4(board.getCommunityCard4()).communityCard5(board.getCommunityCard5()).build();
 
         for (Player player : board.getPlayers()) {
@@ -57,8 +53,8 @@ public class HandHistoryService {
     public void disconnect(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         HandHistory handHistory = board.getHandHistory();
-        handHistory.setBoard(null);
         board.setHandHistory(null);
+        handHistory.setBoard(null);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)
@@ -73,7 +69,6 @@ public class HandHistoryService {
                 handHistoryList.add(new HandHistoryDto(handHistory));
             }
         }
-
         return handHistoryList;
     }
 
