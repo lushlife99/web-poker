@@ -34,7 +34,6 @@ public class GameHandleService {
     private final static int RESULT_ANIMATION_TIME = 5;
 
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void action(BoardDto boardDto, String option, String userId) {
 
 //        actionService.saveAction(boardDto, option, userId);
@@ -78,6 +77,7 @@ public class GameHandleService {
             }
 
             waitDisconnectPlayer();
+
             if(boardServiceV1.isActionPlayerConnect(board.getId())) {
                 System.out.println(7);
 
