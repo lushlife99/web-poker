@@ -17,7 +17,7 @@ import java.util.List;
 public class HandHistoryDto {
 
     private Long id;
-    private List<Action> actionList;
+    private List<ActionDto> actionList;
     private int potAmountPf;
     private int potAmountFlop;
     private int potAmountTurn;
@@ -33,7 +33,11 @@ public class HandHistoryDto {
 
     public HandHistoryDto(HandHistory handHistory) {
         this.id = handHistory.getId();
-        this.actionList = handHistory.getActionList();
+        this.actionList = new ArrayList<>();
+        for (Action action : handHistory.getActionList()) {
+            actionList.add(new ActionDto(action));
+        }
+
         this.potAmountPf = handHistory.getPotAmountPf();
         this.potAmountFlop = handHistory.getPotAmountFlop();
         this.potAmountTurn = handHistory.getPotAmountTurn();
