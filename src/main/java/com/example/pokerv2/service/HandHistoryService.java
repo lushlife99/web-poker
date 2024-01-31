@@ -61,6 +61,7 @@ public class HandHistoryService {
         board.setHandHistory(null);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)
     public List<HandHistoryDto> get(String userId) {
         User user = userRepository.findByUserId(userId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<UserHandHistory> connectionList = user.getHandHistoryList();
@@ -68,6 +69,7 @@ public class HandHistoryService {
 
         for (UserHandHistory userHandHistory : connectionList) {
             HandHistory handHistory = userHandHistory.getHandHistory();
+            System.out.println(handHistory.getId());
             handHistoryList.add(new HandHistoryDto(handHistory));
         }
 

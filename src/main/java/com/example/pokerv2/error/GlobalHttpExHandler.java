@@ -25,6 +25,7 @@ public class GlobalHttpExHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleException(Exception e) {
         e.printStackTrace();
+        System.out.println(e.getCause());
         return new ResponseEntity<>("Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
