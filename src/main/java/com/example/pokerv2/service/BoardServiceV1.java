@@ -392,7 +392,7 @@ public class BoardServiceV1 {
      * @param board
      */
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
-    public Board nextPhase(Board board) {
+    public BoardDto nextPhase(Board board) {
 
         if (board.getPhaseStatus() == PhaseStatus.PRE_FLOP) {
             prepareNextPhase(board);
@@ -406,8 +406,8 @@ public class BoardServiceV1 {
         } else if (board.getPhaseStatus() == PhaseStatus.RIVER) {
             board.setPhaseStatus(PhaseStatus.SHOWDOWN);
         }
-
-        return board;
+        boardRepository.save(board);
+        return new BoardDto(board);
     }
 
 

@@ -52,11 +52,11 @@ public class GameHandleService {
             if (board.getActionPos() == -1) {
                 System.out.println(3);
 
-                board = boardServiceV1.nextPhase(board);
+                boardDto = boardServiceV1.nextPhase(board);
                 if (board.getPhaseStatus() != PhaseStatus.SHOWDOWN) {
                     System.out.println(4);
 
-                    simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), boardServiceV1.getRecentBoard(board.getId())));
+                    simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), boardDto));
                 }
             } else {
                 System.out.println(5);
