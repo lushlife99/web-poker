@@ -209,7 +209,7 @@ public class BoardServiceV1 {
      * @param boardId
      * @return
      */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public boolean isGameEnd(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         int actionableCount = 0;
