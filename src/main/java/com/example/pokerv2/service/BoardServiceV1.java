@@ -114,6 +114,7 @@ public class BoardServiceV1 {
         return false;
     }
 
+    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public String getCurrentActionUserId(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Player player = board.getPlayers().get(getPlayerIdxByPos(board, board.getActionPos()));
@@ -139,7 +140,7 @@ public class BoardServiceV1 {
         return new BoardDto(boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST)));
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public Board saveBoardChanges(BoardDto boardDto, String option, String userId) {
 
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
