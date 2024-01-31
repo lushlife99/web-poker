@@ -227,7 +227,7 @@ public class BoardServiceV1 {
     }
 
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public void initBoard(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         board.setPot(0);
@@ -296,7 +296,7 @@ public class BoardServiceV1 {
         for (int i = 0; i < players.size(); i++) {
             Player player = players.get(i);
             PlayerDto playerDto = boardDto.getPlayers().get(i);
-            if (player.getStatus() == PlayerStatus.PLAY || player.getStatus() == PlayerStatus.ALL_IN) {
+            if (player.getStatus() != PlayerStatus.FOLD && player.getStatus() != PlayerStatus.DISCONNECT_FOLD) {
                 playerDto.setGameResult(
                         GameResultDto.builder().isWinner(true)
                                 .earnedMoney(board.getPot())
@@ -468,7 +468,7 @@ public class BoardServiceV1 {
      * @return
      */
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public Board startGame(Long boardId) {
 
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
