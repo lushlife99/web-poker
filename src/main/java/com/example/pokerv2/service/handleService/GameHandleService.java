@@ -24,9 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class GameHandleService {
 
     private final BoardServiceV1 boardServiceV1;
-    private final ActionService actionService;
+//    private final ActionService actionService;
     private final BoardRepository boardRepository;
-    private final HandHistoryService handHistoryService;
+//    private final HandHistoryService handHistoryService;
     private final SimpMessagingTemplate simpMessagingTemplate;
     private final static String TOPIC_PREFIX = "/topic/board/";
 
@@ -37,7 +37,7 @@ public class GameHandleService {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void action(BoardDto boardDto, String option, String userId) {
 
-        actionService.saveAction(boardDto, option, userId);
+//        actionService.saveAction(boardDto, option, userId);
         Board board = boardServiceV1.saveBoardChanges(boardDto, option, userId);
 
         while(true) {
@@ -66,12 +66,11 @@ public class GameHandleService {
             }
 
             waitDisconnectPlayer();
-
             if(boardServiceV1.isActionPlayerConnect(board.getId())) {
                 break;
             } else {
                 boardDto = boardServiceV1.getRecentBoard(board.getId());
-                actionService.saveAction(boardDto, PlayerAction.FOLD.getActionDetail(), boardServiceV1.getCurrentActionUserId(board.getId()));
+//                actionService.saveAction(boardDto, PlayerAction.FOLD.getActionDetail(), boardServiceV1.getCurrentActionUserId(board.getId()));
                 board = boardServiceV1.saveBoardChanges(boardDto, PlayerAction.FOLD.getActionDetail(), boardServiceV1.getCurrentActionUserId(board.getId()));
                 boardServiceV1.sitOut(boardDto, boardServiceV1.getCurrentActionUserId(board.getId()));
             }
@@ -88,7 +87,7 @@ public class GameHandleService {
 
     public BoardDto startGame(Long boardId) {
         Board board = boardServiceV1.startGame(boardId);
-        HandHistory handHistory = handHistoryService.createHandHistory(boardId);
+        //HandHistory handHistory = handHistoryService.createHandHistory(boardId);
         return new BoardDto(board);
     }
     public void endGame(Long boardId) {

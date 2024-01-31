@@ -142,8 +142,6 @@ public class BoardServiceV1 {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Board saveBoardChanges(BoardDto boardDto, String option, String userId) {
 
-        System.out.println(userId);
-        System.out.println(option);
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         if (!isSeatInBoard(board, userId))
             throw new CustomException(ErrorCode.BAD_REQUEST);
