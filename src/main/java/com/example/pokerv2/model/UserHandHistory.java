@@ -19,9 +19,10 @@ public class UserHandHistory {
     @ManyToOne
     private User user;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne
+    @JoinColumn(name = "hand_history_id")
     private HandHistory handHistory;
-
     private int card1;
     private int card2;
+
 }

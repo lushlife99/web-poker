@@ -19,7 +19,6 @@ public class Action {
     private Long id;
     private int actionNo;
     private Long userId;
-
     @Enumerated(EnumType.ORDINAL)
     private Position position;
     @Enumerated(EnumType.ORDINAL)

@@ -14,13 +14,4 @@ public enum PlayerAction {
     ALL_IN_RAISE("allInRaise");
     private final String actionDetail;
 
-//    public static PlayerAction valueOf(String actionDetail) {
-//        for (PlayerAction action : PlayerAction.values()) {
-//            if (action.getActionDetail() == actionDetail) {
-//                return action;
-//            }
-//        }
-//        throw new IllegalArgumentException("Invalid actionDetail: " + actionDetail);
-//    }
-
 }
