@@ -16,8 +16,6 @@ import com.example.pokerv2.service.HandHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -41,52 +39,37 @@ public class GameHandleService {
         Board board = boardServiceV1.saveBoardChanges(boardDto, option, userId);
 
         while(true) {
-            System.out.println(1);
             if(boardServiceV1.isGameEnd(board.getId())) {
-                System.out.println(2);
-
                 endGame(board.getId());
                 break;
             }
             board = boardServiceV1.setNextAction(board.getId());
 
             if (board.getActionPos() == -1) {
-                System.out.println(3);
-
                 boardDto = boardServiceV1.nextPhase(board.getId());
                 if (boardDto.getPhaseStatus() != PhaseStatus.SHOWDOWN.ordinal()) {
-                    System.out.println(4);
                     simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), boardDto));
                 } else {
                     endGame(board.getId());
                 }
             } else {
-                System.out.println(5);
-
                 simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_ACTION.getDetail(), boardServiceV1.getRecentBoard(board.getId())));
             }
 
             if(boardServiceV1.isGameEnd(board.getId()) || board.getPhaseStatus() == PhaseStatus.SHOWDOWN) {
-                System.out.println(6);
-
                 endGame(board.getId());
                 break;
             }
 
             if(boardServiceV1.isActionPlayerConnect(board.getId())) {
-                System.out.println(11);
                 break;
             }
 
             waitDisconnectPlayer();
 
             if(boardServiceV1.isActionPlayerConnect(board.getId())) {
-                System.out.println(7);
-
                 break;
             } else {
-                System.out.println(8);
-
                 boardDto = boardServiceV1.getRecentBoard(board.getId());
                 actionService.saveAction(boardDto, PlayerAction.FOLD.getActionDetail(), boardServiceV1.getCurrentActionUserId(board.getId()));
                 board = boardServiceV1.saveBoardChanges(boardDto, PlayerAction.FOLD.getActionDetail(), boardServiceV1.getCurrentActionUserId(board.getId()));

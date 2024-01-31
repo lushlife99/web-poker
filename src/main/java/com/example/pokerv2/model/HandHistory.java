@@ -25,8 +25,7 @@ public class HandHistory {
 
     @OneToMany(mappedBy = "handHistory", fetch = FetchType.LAZY, cascade = CascadeType.ALL) @Builder.Default @OrderBy("actionNo asc")
     private List<Action> actionList = new ArrayList<>();
-    @Enumerated(EnumType.ORDINAL)
-    private Position btnPosition;
+    private int btnPosition;
     private int potAmountPf;
     private int potAmountFlop;
     private int potAmountTurn;

@@ -96,7 +96,6 @@ public class BoardServiceV1 {
      * @return 다음 액션이 존재하는지 boolean 리턴.
      */
 
-
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public Board setNextAction(Long boardId) {
 

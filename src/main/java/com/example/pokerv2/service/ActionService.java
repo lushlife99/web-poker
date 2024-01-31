@@ -45,9 +45,11 @@ public class ActionService {
         if(actOption.equals(PlayerAction.FOLD.getActionDetail())) {
             actionDetail += PlayerAction.FOLD.getActionDetail();
         } else if(actOption.equals(PlayerAction.CALL.getActionDetail()) || actOption.equals(PlayerAction.ALL_IN_CALL.getActionDetail())) {
-            actionDetail += PlayerAction.CALL.getActionDetail() + " " + actionPlayer.getPhaseCallSize() + BB;
+            actionDetail += PlayerAction.CALL.getActionDetail() + " " + actionPlayer.getPhaseCallSize()/board.getBlind() + BB;
         } else if(actOption.equals(PlayerAction.RAISE.getActionDetail()) || actOption.equals(PlayerAction.ALL_IN_RAISE.getActionDetail())) {
-            actionDetail += PlayerAction.RAISE.getActionDetail() + " " + actionPlayer.getPhaseCallSize() + BB;
+            actionDetail += PlayerAction.RAISE.getActionDetail() + " " + actionPlayer.getPhaseCallSize()/board.getBlind() + BB;
+        } else if(actOption.equals(PlayerAction.CHECK.getActionDetail())) {
+            actionDetail = PlayerAction.CHECK.getActionDetail();
         }
 
         Action action = Action.builder()
