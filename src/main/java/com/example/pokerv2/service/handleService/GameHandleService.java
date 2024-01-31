@@ -25,9 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class GameHandleService {
 
     private final BoardServiceV1 boardServiceV1;
-//    private final ActionService actionService;
+    private final ActionService actionService;
     private final BoardRepository boardRepository;
-//    private final HandHistoryService handHistoryService;
+    private final HandHistoryService handHistoryService;
     private final SimpMessagingTemplate simpMessagingTemplate;
     private final static String TOPIC_PREFIX = "/topic/board/";
 
@@ -35,10 +35,9 @@ public class GameHandleService {
     private final static int RESULT_ANIMATION_TIME = 5;
 
 
-    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public void action(BoardDto boardDto, String option, String userId) {
 
-//        actionService.saveAction(boardDto, option, userId);
+        actionService.saveAction(boardDto, option, userId);
         Board board = boardServiceV1.saveBoardChanges(boardDto, option, userId);
 
         while(true) {
@@ -55,10 +54,11 @@ public class GameHandleService {
                 System.out.println(3);
 
                 boardDto = boardServiceV1.nextPhase(board.getId());
-                if (board.getPhaseStatus() != PhaseStatus.SHOWDOWN) {
+                if (boardDto.getPhaseStatus() != PhaseStatus.SHOWDOWN.ordinal()) {
                     System.out.println(4);
-
                     simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), boardDto));
+                } else {
+                    endGame(board.getId());
                 }
             } else {
                 System.out.println(5);
@@ -88,7 +88,7 @@ public class GameHandleService {
                 System.out.println(8);
 
                 boardDto = boardServiceV1.getRecentBoard(board.getId());
-//                actionService.saveAction(boardDto, PlayerAction.FOLD.getActionDetail(), boardServiceV1.getCurrentActionUserId(board.getId()));
+                actionService.saveAction(boardDto, PlayerAction.FOLD.getActionDetail(), boardServiceV1.getCurrentActionUserId(board.getId()));
                 board = boardServiceV1.saveBoardChanges(boardDto, PlayerAction.FOLD.getActionDetail(), boardServiceV1.getCurrentActionUserId(board.getId()));
 
                 if(boardServiceV1.isGameEnd(board.getId())) {
@@ -113,7 +113,7 @@ public class GameHandleService {
 
     public BoardDto startGame(Long boardId) {
         Board board = boardServiceV1.startGame(boardId);
-        //HandHistory handHistory = handHistoryService.createHandHistory(boardId);
+        HandHistory handHistory = handHistoryService.createHandHistory(boardId);
         return new BoardDto(board);
     }
     public void endGame(Long boardId) {
@@ -142,6 +142,7 @@ public class GameHandleService {
             e.getStackTrace();
         }
 
+        handHistoryService.disconnect(boardId);
         BoardDto boardDto = boardServiceV1.getRecentBoard(board.getId());
         if (boardDto.getTotalPlayer() >= 2) {
             startGame(board.getId());
