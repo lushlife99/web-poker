@@ -104,7 +104,9 @@ public class GameHandleService {
 
         boardServiceV1.sitOut(boardDto, userId);
         boardDto = boardServiceV1.getRecentBoard(boardDto.getId());
-        if (boardServiceV1.isGameEnd(boardDto.getId())) {
+        if (boardDto.getPhaseStatus() >= PhaseStatus.PRE_FLOP.ordinal() &&
+                boardDto.getPhaseStatus() <= PhaseStatus.RIVER.ordinal() &&
+                boardServiceV1.isGameEnd(boardDto.getId())) {
            endGame(boardDto.getId());
         }
     }
