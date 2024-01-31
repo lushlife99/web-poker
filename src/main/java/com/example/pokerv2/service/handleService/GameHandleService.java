@@ -50,10 +50,10 @@ public class GameHandleService {
             if (board.getActionPos() == -1) {
                 board = boardServiceV1.nextPhase(board);
                 if (board.getPhaseStatus() != PhaseStatus.SHOWDOWN) {
-                    simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), new BoardDto(board)));
+                    simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), boardServiceV1.getRecentBoard(board.getId())));
                 }
             } else {
-                simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_ACTION.getDetail(), new BoardDto(board)));
+                simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_ACTION.getDetail(), boardServiceV1.getRecentBoard(board.getId())));
             }
 
             if(boardServiceV1.isGameEnd(board.getId()) || board.getPhaseStatus() == PhaseStatus.SHOWDOWN) {
