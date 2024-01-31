@@ -90,7 +90,13 @@ public class GameHandleService {
                 boardDto = boardServiceV1.getRecentBoard(board.getId());
 //                actionService.saveAction(boardDto, PlayerAction.FOLD.getActionDetail(), boardServiceV1.getCurrentActionUserId(board.getId()));
                 board = boardServiceV1.saveBoardChanges(boardDto, PlayerAction.FOLD.getActionDetail(), boardServiceV1.getCurrentActionUserId(board.getId()));
-                boardServiceV1.sitOut(boardDto, boardServiceV1.getCurrentActionUserId(board.getId()));
+
+                if(boardServiceV1.isGameEnd(board.getId())) {
+                    endGame(board.getId());
+                    break;
+                } else {
+                    boardServiceV1.sitOut(boardDto, boardServiceV1.getCurrentActionUserId(board.getId()));
+                }
             }
         }
     }
