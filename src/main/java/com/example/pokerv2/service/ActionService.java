@@ -41,9 +41,6 @@ public class ActionService {
                 actionPlayer = player;
             }
         }
-
-        System.out.println(actOption);
-
         if(actOption.equals(PlayerAction.FOLD.getActionDetail())) {
             actionDetail += PlayerAction.FOLD.getActionDetail();
         } else if(actOption.equals(PlayerAction.CALL.getActionDetail()) || actOption.equals(PlayerAction.ALL_IN_CALL.getActionDetail())) {

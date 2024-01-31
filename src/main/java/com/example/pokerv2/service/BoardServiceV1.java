@@ -4,10 +4,7 @@ import com.example.pokerv2.dto.BoardDto;
 import com.example.pokerv2.dto.GameResultDto;
 import com.example.pokerv2.dto.MessageDto;
 import com.example.pokerv2.dto.PlayerDto;
-import com.example.pokerv2.enums.MessageType;
-import com.example.pokerv2.enums.PhaseStatus;
-import com.example.pokerv2.enums.PlayerStatus;
-import com.example.pokerv2.enums.Position;
+import com.example.pokerv2.enums.*;
 import com.example.pokerv2.error.CustomException;
 import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.model.Board;
@@ -101,39 +98,27 @@ public class BoardServiceV1 {
 
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public Board action(Long boardId) {
+    public Board setNextAction(Long boardId) {
 
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-        List<Player> players = board.getPlayers();
         int nextActionPos = getNextActionPos(board);
-        if (nextActionPos == -1) {
-            if (!isGameEnd(boardId)) {
-                nextPhase(board);
-                if (board.getPhaseStatus() == PhaseStatus.SHOWDOWN) {
-
-                } else {
-                    simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), new BoardDto(board)));
-                }
-            }
-        } else {
-            int nextActionIdx = getPlayerIdxByPos(board, nextActionPos);
-            Player nextActionPlayer = players.get(nextActionIdx);
-
-            board.setLastActionTime(LocalDateTime.now());
-            board.setActionPos(nextActionPlayer.getPosition().getPosNum());
-            simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_ACTION.getDetail(), new BoardDto(board)));
-        }
-
+        board.setActionPos(nextActionPos);
+        board.setLastActionTime(LocalDateTime.now());
         return board;
     }
 
+    public boolean isPhaseEnd(Board board) {
+        if(board.getBettingPos() == board.getActionPos()) {
+            return true;
+        }
+        return false;
+    }
 
-
-    @Transactional
-    public void setPlayerDisconnectFold(Long boardId) {
+    public String getCurrentActionUserId(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Player player = board.getPlayers().get(getPlayerIdxByPos(board, board.getActionPos()));
-        player.setStatus(PlayerStatus.DISCONNECT_FOLD);
+
+        return player.getUser().getUserId();
     }
 
     @Transactional
@@ -150,13 +135,15 @@ public class BoardServiceV1 {
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
-    public Board getRecentBoard(Long boardId) {
-        return boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+    public BoardDto getRecentBoard(Long boardId) {
+        return new BoardDto(boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST)));
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Board saveBoardChanges(BoardDto boardDto, String option, String userId) {
 
+        System.out.println(userId);
+        System.out.println(option);
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         if (!isSeatInBoard(board, userId))
             throw new CustomException(ErrorCode.BAD_REQUEST);
@@ -167,19 +154,19 @@ public class BoardServiceV1 {
             if (p.getUser().getUserId().equals(userId)) {
                 p.changePlayerStatus(playerDto);
                 if (p.getStatus().getStatusNum() < PlayerStatus.FOLD.getStatusNum()) {
-                    if (option.equals("fold")) {
+                    if (option.equals(PlayerAction.FOLD.getActionDetail())) {
                         p.setStatus(PlayerStatus.DISCONNECT_FOLD);
-                    } else if (option.equals("allin")) {
+                    } else if (option.equals(PlayerAction.ALL_IN_CALL.getActionDetail()) ||option.equals(PlayerAction.ALL_IN_RAISE.getActionDetail()) ) {
                         p.setStatus(PlayerStatus.DISCONNECT_ALL_IN);
-                    } else {
+                    } else if (option.equals(PlayerAction.CALL.getActionDetail()) || option.equals(PlayerAction.RAISE.getActionDetail())){
                         p.setStatus(PlayerStatus.DISCONNECT_PLAYED);
                     }
                 } else {
-                    if (option.equals("fold")) {
+                    if (option.equals(PlayerAction.FOLD.getActionDetail())) {
                         p.setStatus(PlayerStatus.FOLD);
-                    } else if (option.equals("allin")) {
+                    } else if (option.equals(PlayerAction.ALL_IN_CALL.getActionDetail()) ||option.equals(PlayerAction.ALL_IN_RAISE.getActionDetail()) ) {
                         p.setStatus(PlayerStatus.ALL_IN);
-                    } else {
+                    } else if (option.equals(PlayerAction.CALL.getActionDetail()) || option.equals(PlayerAction.RAISE.getActionDetail())){
                         p.setStatus(PlayerStatus.PLAY);
                     }
                 }
@@ -406,7 +393,7 @@ public class BoardServiceV1 {
      * @param board
      */
     @Transactional
-    public void nextPhase(Board board) {
+    public Board nextPhase(Board board) {
 
         if (board.getPhaseStatus() == PhaseStatus.PRE_FLOP) {
             prepareNextPhase(board);
@@ -420,6 +407,8 @@ public class BoardServiceV1 {
         } else if (board.getPhaseStatus() == PhaseStatus.RIVER) {
             board.setPhaseStatus(PhaseStatus.SHOWDOWN);
         }
+
+        return board;
     }
 
 
@@ -558,7 +547,7 @@ public class BoardServiceV1 {
 
     }
 
-    private int getPlayerIdxByPos(Board board, int posNum) {
+    public int getPlayerIdxByPos(Board board, int posNum) {
         List<Player> players = board.getPlayers();
 
         for (int i = 0; i < board.getTotalPlayer(); i++) {
@@ -657,7 +646,7 @@ public class BoardServiceV1 {
         board.setBettingPos(updateBetPos.getPosNum());
     }
 
-    @Transactional(isolation = Isolation.READ_UNCOMMITTED)
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void sitOut(BoardDto boardDto, String userId) {
         User user = userRepository.findByUserId(userId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
