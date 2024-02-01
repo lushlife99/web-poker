@@ -57,6 +57,7 @@ public class BoardServiceV1 {
         else board = Board.builder().blind(1000).phaseStatus(PhaseStatus.WAITING).gameSeq(0L).build();
         Player player = buyIn(board, user, requestBb);
         sitIn(board, player);
+        playerRepository.save(player);
         boardRepository.save(board);
         return new BoardDto(board);
     }
