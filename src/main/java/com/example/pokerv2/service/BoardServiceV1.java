@@ -473,7 +473,8 @@ public class BoardServiceV1 {
             player.setStatus(PlayerStatus.PLAY);
         }
         board.setGameSeq(board.getGameSeq() + 1);
-        return boardRepository.saveAndFlush(board);
+        playerRepository.saveAll(board.getPlayers());
+        return boardRepository.save(board);
     }
 
 
