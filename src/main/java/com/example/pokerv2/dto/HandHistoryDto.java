@@ -52,6 +52,7 @@ public class HandHistoryDto {
         for (UserHandHistory userHandHistory : handHistory.getUserList()) {
             userList.add(new UserDto(userHandHistory.getUser()));
         }
+        this.posList = handHistory.getPosList();
         cardList = handHistory.getCardList();
     }
 
