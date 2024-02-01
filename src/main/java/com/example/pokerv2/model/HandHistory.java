@@ -19,9 +19,8 @@ public class HandHistory {
 
     @Id @GeneratedValue
     private Long id;
-
-    @OneToOne
-    private Board board;
+    private Long boardId;
+    private Long gameSeq;
 
     @OneToMany(mappedBy = "handHistory", fetch = FetchType.LAZY, cascade = CascadeType.ALL) @Builder.Default @OrderBy("actionNo asc")
     private List<Action> actionList = new ArrayList<>();

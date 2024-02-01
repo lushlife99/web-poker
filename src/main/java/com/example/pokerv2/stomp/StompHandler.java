@@ -1,6 +1,7 @@
 package com.example.pokerv2.stomp;
 
-import com.example.pokerv2.service.PlayerLifeCycleService;
+
+import com.example.pokerv2.service.PlayerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
@@ -21,7 +22,7 @@ import org.springframework.stereotype.Component;
 public class StompHandler implements ChannelInterceptor {
 
     private final WebSocketAuthenticatorService webSocketAuthenticatorService;
-    private final PlayerLifeCycleService playerLifeCycleService;
+    private final PlayerService playerLifeCycleService;
     private static final String USERNAME_HEADER = "userId";
     private static final String PASSWORD_HEADER = "password";
 

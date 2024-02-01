@@ -28,8 +28,7 @@ public class BoardController {
 
     @PostMapping("/joinGame")
     public BoardDto joinGame(@RequestParam int bb, Principal principal) {
-
-        return boardServiceV1.join(bb, principal);
+        return gameHandleService.join(bb, principal);
     }
 
     @MessageMapping("/board/action/{option}")
@@ -60,8 +59,9 @@ public class BoardController {
      */
 
     @PostMapping("/start/{boardId}")
-    public BoardDto startGame(@PathVariable Long boardId) {
-       return gameHandleService.startGame(boardId);
+    public ResponseEntity startGame(@PathVariable Long boardId) {
+        gameHandleService.startGame(boardId);
+        return new ResponseEntity(HttpStatus.OK);
     }
 
     @PostMapping("/end/{boardId}")
@@ -69,4 +69,5 @@ public class BoardController {
         gameHandleService.endGameTest(boardId);
         return new ResponseEntity(HttpStatus.OK);
     }
+
 }

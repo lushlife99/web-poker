@@ -34,14 +34,16 @@ public class ActionService {
     public void saveAction(BoardDto boardDto, String actOption, String userId) {
         Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         User actionUser = userRepository.findByUserId(userId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-        HandHistory handHistory = board.getHandHistory();
+        HandHistory handHistory = handHistoryRepository.findByBoardIdAndGameSeq(board.getId(), board.getGameSeq()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         String actionDetail = "";
         Player actionPlayer = null;
         for (Player player : board.getPlayers()) {
             if(player.getUser().getId() == actionUser.getId()) {
                 actionPlayer = player;
+                break;
             }
         }
+
         if(actOption.equals(PlayerAction.FOLD.getActionDetail())) {
             actionDetail += PlayerAction.FOLD.getActionDetail();
         } else if(actOption.equals(PlayerAction.CALL.getActionDetail()) || actOption.equals(PlayerAction.ALL_IN_CALL.getActionDetail())) {
