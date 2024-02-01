@@ -29,6 +29,7 @@ public class HandHistoryService {
 
         List<UserHandHistory> connectionList = new ArrayList<>();
         List<Integer> cardList = new ArrayList<>();
+        List<Integer> posList = new ArrayList<>();
 
 
         HandHistory handHistory = HandHistory.builder().boardId(board.getId()).gameSeq(board.getGameSeq()).cardList(cardList).btnPosition(board.getBtn())
@@ -39,9 +40,11 @@ public class HandHistoryService {
             cardList.add(player.getCard1());
             cardList.add(player.getCard2());
             connectionList.add(connection);
+            posList.add(player.getPosition().getPosNum());
         }
 
         handHistory.setUserList(connectionList);
+        handHistory.setPosList(posList);
 
         handHistoryRepository.save(handHistory);
         userHandHistoryRepository.saveAll(connectionList);

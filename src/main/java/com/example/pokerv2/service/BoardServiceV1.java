@@ -35,9 +35,7 @@ public class BoardServiceV1 {
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
     private final PlayerRepository playerRepository;
-    private final SimpMessagingTemplate simpMessagingTemplate;
     private static final int MAX_PLAYER = 6;
-    private final static String TOPIC_PREFIX = "/topic/board/";
 
     /**
      * join - 24/01/04 chan
@@ -464,7 +462,6 @@ public class BoardServiceV1 {
 
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public Board startGame(Long boardId) {
-        System.out.println(TransactionSynchronizationManager.isActualTransactionActive());
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         setBtnExistPlayer(board);
         takeAnte(board);
@@ -474,8 +471,6 @@ public class BoardServiceV1 {
         for (Player player : board.getPlayers()) {
             player.setStatus(PlayerStatus.PLAY);
         }
-        System.out.println("BoardServiceV1.startGame");
-        System.out.println(new BoardDto(board));
         board.setGameSeq(board.getGameSeq() + 1);
         return boardRepository.saveAndFlush(board);
     }

@@ -40,6 +40,10 @@ public class HandHistory {
     private List<UserHandHistory> userList = new ArrayList<>();
 
     @ElementCollection
+    @OrderColumn(name = "pos_order")
+    private List<Integer> posList = new ArrayList<>();
+
+    @ElementCollection
     @OrderColumn(name = "card_order")
     private List<Integer> cardList = new ArrayList<>();
 }
