@@ -41,7 +41,12 @@ public class GameHandleService {
         sendUpdateBoardToPlayers(boardDto.getId(), MessageType.PLAYER_JOIN);
 
         if(boardDto.getPhaseStatus() == PhaseStatus.WAITING.ordinal()) {
-            startGame(boardDto.getId());
+            boardServiceV1.dropDisconnectPlayers(boardDto.getId());
+            if(boardServiceV1.getBoard(boardDto.getId()).getTotalPlayer() >= 2) {
+                boardServiceV1.startGame(boardDto.getId());
+                handHistoryService.createHandHistory(boardDto.getId());
+                sendUpdateBoardToPlayers(boardDto.getId(), MessageType.GAME_START);
+            }
         }
         return boardServiceV1.getBoard(boardDto.getId());
     }
