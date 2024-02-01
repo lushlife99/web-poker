@@ -1,14 +1,15 @@
 package com.example.pokerv2.service.handleService;
 
 import com.example.pokerv2.dto.BoardDto;
+import com.example.pokerv2.dto.GameResultDto;
 import com.example.pokerv2.dto.MessageDto;
+import com.example.pokerv2.dto.PlayerDto;
 import com.example.pokerv2.enums.MessageType;
 import com.example.pokerv2.enums.PhaseStatus;
 import com.example.pokerv2.enums.PlayerAction;
 import com.example.pokerv2.error.CustomException;
 import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.model.Board;
-import com.example.pokerv2.model.HandHistory;
 import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.service.ActionService;
 import com.example.pokerv2.service.BoardServiceV1;
@@ -16,7 +17,12 @@ import com.example.pokerv2.service.HandHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.security.Principal;
 
 @Service
 @RequiredArgsConstructor
@@ -33,11 +39,20 @@ public class GameHandleService {
     private final static int RESULT_ANIMATION_TIME = 5;
 
 
-    public void action(BoardDto boardDto, String option, String userId) {
+    public BoardDto join(int requestBb, Principal principal) {
+        BoardDto boardDto = boardServiceV1.join(requestBb, principal);
+        sendUpdateBoardToPlayers(boardDto.getId(), MessageType.PLAYER_JOIN);
 
+        if(boardDto.getPhaseStatus() == PhaseStatus.WAITING.ordinal()) {
+            startGame(boardDto.getId());
+        }
+        return boardServiceV1.getBoard(boardDto.getId());
+    }
+
+    public void action(BoardDto boardDto, String option, String userId) {
+        System.out.println("GameHandleService.action");
         actionService.saveAction(boardDto, option, userId);
         Board board = boardServiceV1.saveBoardChanges(boardDto, option, userId);
-
         while(true) {
             if(boardServiceV1.isGameEnd(board.getId())) {
                 endGame(board.getId());
@@ -48,12 +63,12 @@ public class GameHandleService {
             if (board.getActionPos() == -1) {
                 boardDto = boardServiceV1.nextPhase(board.getId());
                 if (boardDto.getPhaseStatus() != PhaseStatus.SHOWDOWN.ordinal()) {
-                    simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_PHASE_START.getDetail(), boardDto));
+                    sendUpdateBoardToPlayers(board.getId(), MessageType.NEXT_PHASE_START);
                 } else {
                     endGame(board.getId());
                 }
             } else {
-                simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + board.getId(), new MessageDto(MessageType.NEXT_ACTION.getDetail(), boardServiceV1.getRecentBoard(board.getId())));
+                sendUpdateBoardToPlayers(board.getId(), MessageType.NEXT_ACTION);
             }
 
             if(boardServiceV1.isGameEnd(board.getId()) || board.getPhaseStatus() == PhaseStatus.SHOWDOWN) {
@@ -70,34 +85,43 @@ public class GameHandleService {
             if(boardServiceV1.isActionPlayerConnect(board.getId())) {
                 break;
             } else {
-                boardDto = boardServiceV1.getRecentBoard(board.getId());
-                actionService.saveAction(boardDto, PlayerAction.FOLD.getActionDetail(), boardServiceV1.getCurrentActionUserId(board.getId()));
-                board = boardServiceV1.saveBoardChanges(boardDto, PlayerAction.FOLD.getActionDetail(), boardServiceV1.getCurrentActionUserId(board.getId()));
+                timeOutDisconnectPlayer(board);
 
                 if(boardServiceV1.isGameEnd(board.getId())) {
                     endGame(board.getId());
                     break;
                 } else {
                     boardServiceV1.sitOut(boardDto, boardServiceV1.getCurrentActionUserId(board.getId()));
+                    sendUpdateBoardToPlayers(board.getId(), MessageType.PLAYER_EXIT);
                 }
             }
         }
     }
-    public void exitPlayer(BoardDto boardDto, String userId) {
 
+    private void timeOutDisconnectPlayer(Board board) {
+        BoardDto boardDto;
+        boardDto = boardServiceV1.getBoard(board.getId());
+        actionService.saveAction(boardDto, PlayerAction.FOLD.getActionDetail(), boardServiceV1.getCurrentActionUserId(board.getId()));
+        board = boardServiceV1.saveBoardChanges(boardDto, PlayerAction.FOLD.getActionDetail(), boardServiceV1.getCurrentActionUserId(board.getId()));
+    }
+
+    public void exitPlayer(BoardDto boardDto, String userId) {
         boardServiceV1.sitOut(boardDto, userId);
-        boardDto = boardServiceV1.getRecentBoard(boardDto.getId());
-        if (boardDto.getPhaseStatus() >= PhaseStatus.PRE_FLOP.ordinal() &&
-                boardDto.getPhaseStatus() <= PhaseStatus.RIVER.ordinal() &&
+        sendUpdateBoardToPlayers(boardDto.getId(), MessageType.PLAYER_EXIT);
+        boardDto = boardServiceV1.getBoard(boardDto.getId());
+        if (boardDto.getPhaseStatus() >= PhaseStatus.PRE_FLOP.ordinal() && boardDto.getPhaseStatus() <= PhaseStatus.RIVER.ordinal() &&
                 boardServiceV1.isGameEnd(boardDto.getId())) {
            endGame(boardDto.getId());
         }
     }
 
-    public BoardDto startGame(Long boardId) {
-        Board board = boardServiceV1.startGame(boardId);
-        HandHistory handHistory = handHistoryService.createHandHistory(boardId);
-        return new BoardDto(board);
+    public void startGame(Long boardId) {
+        boardServiceV1.dropDisconnectPlayers(boardId);
+        if(boardServiceV1.getBoard(boardId).getTotalPlayer() >= 2) {
+            boardServiceV1.startGame(boardId);
+            handHistoryService.createHandHistory(boardId);
+            sendUpdateBoardToPlayers(boardId, MessageType.GAME_START);
+        }
     }
     public void endGame(Long boardId) {
 
@@ -106,11 +130,19 @@ public class GameHandleService {
         int resultAnimationCount = 0;
 
         if (boardServiceV1.isGameEnd(board.getId())) {
-            resultAnimationCount = boardServiceV1.winOnePlayer(board.getId());
+            BoardDto boardDto = boardServiceV1.winOnePlayer(board.getId());
+            sendUpdateBoardToPlayers(boardDto, MessageType.GAME_END);
+            resultAnimationCount = 1;
         } else {
-            resultAnimationCount = boardServiceV1.showDown(board.getId());
+            BoardDto boardDto = boardServiceV1.showDown(board.getId());
+            sendUpdateBoardToPlayers(boardDto, MessageType.SHOW_DOWN);
+            for (PlayerDto player : boardDto.getPlayers()) {
+                GameResultDto gameResult = player.getGameResult();
+                if (gameResult.isWinner()) {
+                    resultAnimationCount++;
+                }
+            }
         }
-
         try {
             Thread.sleep(resultAnimationCount * RESULT_ANIMATION_TIME * 1000);
         } catch (InterruptedException e) {
@@ -118,6 +150,7 @@ public class GameHandleService {
         }
 
         boardServiceV1.initBoard(board.getId());
+        sendUpdateBoardToPlayers(boardId, MessageType.INIT_BOARD);
 
         try {
             Thread.sleep(1000);
@@ -125,11 +158,7 @@ public class GameHandleService {
             e.getStackTrace();
         }
 
-        handHistoryService.disconnect(boardId);
-        BoardDto boardDto = boardServiceV1.getRecentBoard(board.getId());
-        if (boardDto.getTotalPlayer() >= 2) {
-            startGame(board.getId());
-        }
+        startGame(boardId);
     }
 
     private static void waitDisconnectPlayer() {
@@ -152,4 +181,11 @@ public class GameHandleService {
         endGame(boardId);
     }
 
+    private void sendUpdateBoardToPlayers(Long boardId, MessageType messageType) {
+        simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + boardId, new MessageDto(messageType.getDetail(), boardServiceV1.getBoard(boardId)));
+    }
+
+    private void sendUpdateBoardToPlayers(BoardDto boardDto, MessageType messageType) {
+        simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + boardDto.getId(), new MessageDto(messageType.getDetail(), boardDto));
+    }
 }

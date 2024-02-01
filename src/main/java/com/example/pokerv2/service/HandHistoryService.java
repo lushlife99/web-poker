@@ -31,7 +31,7 @@ public class HandHistoryService {
         List<Integer> cardList = new ArrayList<>();
 
 
-        HandHistory handHistory = HandHistory.builder().board(board).cardList(cardList).btnPosition(board.getBtn())
+        HandHistory handHistory = HandHistory.builder().boardId(board.getId()).gameSeq(board.getGameSeq()).cardList(cardList).btnPosition(board.getBtn())
                 .communityCard1(board.getCommunityCard1()).communityCard2(board.getCommunityCard2()).communityCard3(board.getCommunityCard3()).communityCard4(board.getCommunityCard4()).communityCard5(board.getCommunityCard5()).build();
 
         for (Player player : board.getPlayers()) {
@@ -45,16 +45,7 @@ public class HandHistoryService {
 
         handHistoryRepository.save(handHistory);
         userHandHistoryRepository.saveAll(connectionList);
-        board.setHandHistory(handHistory);
         return handHistory;
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)
-    public void disconnect(Long boardId) {
-        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-        HandHistory handHistory = board.getHandHistory();
-        board.setHandHistory(null);
-        handHistory.setBoard(null);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)

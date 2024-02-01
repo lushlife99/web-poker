@@ -21,8 +21,7 @@ public class Board {
 
     @Id @GeneratedValue
     private Long id;
-    @Builder.Default
-    private int gameSeq = 0;
+    private Long gameSeq;
     private int btn;
     private int totalPlayer;
     private int blind;
@@ -42,9 +41,6 @@ public class Board {
     private int communityCard5;
 
     private LocalDateTime lastActionTime;
-
-    @OneToOne
-    private HandHistory handHistory;
 
     @OneToMany(mappedBy = "board", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @OrderBy("position asc")

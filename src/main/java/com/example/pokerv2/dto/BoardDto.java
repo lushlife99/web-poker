@@ -30,7 +30,7 @@ public class BoardDto {
     private int communityCard3;
     private int communityCard4;
     private int communityCard5;
-    private int gameSeq;
+    private long gameSeq;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
     private LocalDateTime lastActionTime;
     private List<Integer> totalCallSize;
