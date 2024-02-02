@@ -10,43 +10,53 @@ import com.example.pokerv2.enums.PlayerAction;
 import com.example.pokerv2.error.CustomException;
 import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.model.Board;
+import com.example.pokerv2.model.Player;
 import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.service.ActionService;
 import com.example.pokerv2.service.BoardServiceV1;
 import com.example.pokerv2.service.HandHistoryService;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.security.Principal;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GameHandleService {
 
     private final BoardServiceV1 boardServiceV1;
-    private final ActionService actionService;
     private final BoardRepository boardRepository;
+    private final ActionService actionService;
     private final HandHistoryService handHistoryService;
     private final SimpMessagingTemplate simpMessagingTemplate;
+
     private final static String TOPIC_PREFIX = "/topic/board/";
 
     private final static int ACTION_TIME = 10;
-    private final static int RESULT_ANIMATION_TIME = 5;
-
+    private final static int RESULT_ANIMATION_TIME = 3;
 
     public BoardDto join(int requestBb, Principal principal) {
-        BoardDto boardDto = boardServiceV1.join(requestBb, principal);
-        sendUpdateBoardToPlayers(boardDto.getId(), MessageType.PLAYER_JOIN);
 
-        if(boardDto.getPhaseStatus() == PhaseStatus.WAITING.ordinal()) {
-            startGame(boardDto.getId());
+        BoardDto boardDto = boardServiceV1.join(requestBb, principal);
+        sendUpdateBoardToPlayers(boardDto, MessageType.PLAYER_JOIN);
+
+        if(boardDto.getPhaseStatus() == PhaseStatus.WAITING.ordinal() && boardDto.getTotalPlayer() >= 2) {
+            boardDto = startGame(boardDto.getId());
         }
-        return boardServiceV1.getBoard(boardDto.getId());
+
+        return boardDto;
     }
 
     public void action(BoardDto boardDto, String option, String userId) {
+        System.out.println("GameHandleService.action");
         actionService.saveAction(boardDto, option, userId);
         Board board = boardServiceV1.saveBoardChanges(boardDto, option, userId);
         while(true) {
@@ -102,6 +112,7 @@ public class GameHandleService {
     }
 
     public void exitPlayer(BoardDto boardDto, String userId) {
+        System.out.println("GameHandleService.exitPlayer");
         boardServiceV1.sitOut(boardDto, userId);
         sendUpdateBoardToPlayers(boardDto.getId(), MessageType.PLAYER_EXIT);
         boardDto = boardServiceV1.getBoard(boardDto.getId());
@@ -111,26 +122,30 @@ public class GameHandleService {
         }
     }
 
-    public void startGame(Long boardId) {
+    public BoardDto startGame(Long boardId) {
         boardServiceV1.dropDisconnectPlayers(boardId);
-        if(boardServiceV1.getBoard(boardId).getTotalPlayer() >= 2) {
+        BoardDto board = boardServiceV1.getBoard(boardId);
+        if(board.getTotalPlayer() >= 2) {
             boardServiceV1.startGame(boardId);
-            handHistoryService.createHandHistory(boardId);
             sendUpdateBoardToPlayers(boardId, MessageType.GAME_START);
+            handHistoryService.createHandHistory(boardId);
         }
+
+        return boardServiceV1.getBoard(boardId);
     }
     public void endGame(Long boardId) {
 
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         boardServiceV1.initPhase(board.getId());
         int resultAnimationCount = 0;
+        BoardDto boardDto;
 
         if (boardServiceV1.isGameEnd(board.getId())) {
-            BoardDto boardDto = boardServiceV1.winOnePlayer(board.getId());
+            boardDto = boardServiceV1.winOnePlayer(board.getId());
             sendUpdateBoardToPlayers(boardDto, MessageType.GAME_END);
             resultAnimationCount = 1;
         } else {
-            BoardDto boardDto = boardServiceV1.showDown(board.getId());
+            boardDto = boardServiceV1.showDown(board.getId());
             sendUpdateBoardToPlayers(boardDto, MessageType.SHOW_DOWN);
             for (PlayerDto player : boardDto.getPlayers()) {
                 GameResultDto gameResult = player.getGameResult();
@@ -139,10 +154,15 @@ public class GameHandleService {
                 }
             }
         }
+
         try {
             Thread.sleep(resultAnimationCount * RESULT_ANIMATION_TIME * 1000);
         } catch (InterruptedException e) {
             e.getStackTrace();
+        }
+
+        if(boardDto.getGameSeq() != boardServiceV1.getBoard(boardId).getGameSeq()) {
+            return;
         }
 
         boardServiceV1.initBoard(board.getId());
@@ -152,6 +172,10 @@ public class GameHandleService {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
             e.getStackTrace();
+        }
+
+        if(boardDto.getGameSeq() != boardServiceV1.getBoard(boardId).getGameSeq()) {
+            return;
         }
 
         startGame(boardId);

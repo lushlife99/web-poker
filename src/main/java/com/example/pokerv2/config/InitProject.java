@@ -1,12 +1,18 @@
 package com.example.pokerv2.config;
 
+import com.example.pokerv2.enums.PhaseStatus;
+import com.example.pokerv2.model.Board;
 import com.example.pokerv2.model.User;
+import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.service.UserServiceV1;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Slf4j
@@ -18,12 +24,12 @@ public class InitProject {
 
     @EventListener(ApplicationReadyEvent.class)
     public void initData() {
-
         try {
             userServiceV1.join(User.builder().userName("a1").password("1234").userId("a1").build());
             userServiceV1.join(User.builder().userName("a2").password("1234").userId("a2").build());
             userServiceV1.join(User.builder().userName("a3").password("1234").userId("a3").build());
             log.info("Initial Data Init");
+
         } catch (Exception e) {
         }
     }

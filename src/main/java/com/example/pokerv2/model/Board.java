@@ -42,7 +42,7 @@ public class Board {
 
     private LocalDateTime lastActionTime;
 
-    @OneToMany(mappedBy = "board", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "board", fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
     @OrderBy("position asc")
     @Builder.Default
     private List<Player> players = new ArrayList<>();

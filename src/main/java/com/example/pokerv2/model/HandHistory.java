@@ -41,9 +41,11 @@ public class HandHistory {
 
     @ElementCollection
     @OrderColumn(name = "pos_order")
+    @Builder.Default
     private List<Integer> posList = new ArrayList<>();
 
     @ElementCollection
     @OrderColumn(name = "card_order")
+    @Builder.Default
     private List<Integer> cardList = new ArrayList<>();
 }
