@@ -54,7 +54,7 @@ public class BoardController {
         gameHandleService.exitPlayer(board, principal.getName());
     }
 
-    @GetMapping("/{blind}")
+    @GetMapping("/boardList/{blind}")
     public List<BoardDto> getBoardList(@PathVariable int blind) {
         return boardServiceV1.getBoardList(blind);
     }

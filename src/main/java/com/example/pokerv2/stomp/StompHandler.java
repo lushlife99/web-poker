@@ -45,7 +45,7 @@ public class StompHandler implements ChannelInterceptor {
         }
         else if (StompCommand.DISCONNECT == accessor.getCommand()) {
             final String disconnect_option = accessor.getFirstNativeHeader(DISCONNECT_OPTION);
-            if(accessor.getUser() != null && disconnect_option.equals(disconnectValue)) {
+            if(accessor.getUser() != null && disconnect_option != null && disconnect_option.equals(disconnectValue)) {
                 playerLifeCycleService.setDisconnect(accessor.getUser());
             }
         }
