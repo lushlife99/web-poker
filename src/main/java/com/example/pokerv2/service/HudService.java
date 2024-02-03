@@ -1,22 +1,24 @@
 package com.example.pokerv2.service;
 
-import com.example.pokerv2.dto.BoardDto;
-import com.example.pokerv2.dto.PlayerDto;
+import com.example.pokerv2.dto.*;
 import com.example.pokerv2.enums.PhaseStatus;
+import com.example.pokerv2.enums.PlayerAction;
 import com.example.pokerv2.error.CustomException;
 import com.example.pokerv2.error.ErrorCode;
-import com.example.pokerv2.model.Board;
-import com.example.pokerv2.model.Hud;
-import com.example.pokerv2.model.Player;
+import com.example.pokerv2.model.*;
 import com.example.pokerv2.repository.BoardRepository;
+import com.example.pokerv2.repository.HandHistoryRepository;
 import com.example.pokerv2.repository.HudRepository;
 import com.example.pokerv2.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,10 +26,8 @@ public class HudService {
 
     private final HudRepository hudRepository;
     private final BoardRepository boardRepository;
+    private final HandHistoryRepository handHistoryRepository;
     private final UserRepository userRepository;
-    private static final String ACTION_RAISE = "raise";
-    private static final String ACTION_FOLD = "fold";
-    private static final String ACTION_CALL = "call";
 
 
     /**
@@ -43,25 +43,27 @@ public class HudService {
      *     private int wtf; -> 플랍. PhaseStatus가 변경된 직후
      *     private int wtsd; -> 리버 끝.
      */
-    public void plusTotalHands(BoardDto boardDto) {
-        List<PlayerDto> players = boardDto.getPlayers();
-        List<Hud> hudList = new ArrayList<>();
-        for (PlayerDto player : players) {
-            Optional<Hud> findHud = hudRepository.findByUserId(player.getUserId());
 
-            if(findHud.isPresent()) {
-                Hud hud = findHud.get();
-                hud.setTotalHands(hud.getTotalHands() + 1);
-                hudList.add(hud);
-            }
-        }
-        hudRepository.saveAll(hudList);
+
+    @Transactional(isolation = Isolation.READ_COMMITTED, readOnly = true)
+    public HudDto get(Long userId) {
+        Hud hud = hudRepository.findByUserId(userId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+
+        return new HudDto(hud);
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED, readOnly = true)
+    public HudDto get(String userId) {
+        User user = userRepository.findByUserId(userId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+
+        return new HudDto(user.getHud());
     }
 
     /**
      * totalHands, wtf, wtsd 계산
      * @param boardId
      */
+    @Transactional
     public void addCountAfterPhaseChange(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
@@ -89,9 +91,10 @@ public class HudService {
     /**
      * addCountBeforePhaseChange
      *
-     * Vpip, PfAggressiveCnt 게산.
+     * Vpip, PfAggressiveCnt, Pfr 게산.
      * @param boardId
      */
+    @Transactional
     public void addCountBeforePhaseChange(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
@@ -100,25 +103,95 @@ public class HudService {
             Player player = players.get(getPlayerIdxByPos(board, board.getBettingPos()));
             plusPfAggressiveCnt(player);
             plusVpipCnt(board);
+            plusPfr(board);
         }
     }
 
 
     /**
      * addCountBeforeSaveAction
-     * cBet, 3bet, pfr 계산.
+     * cBet, 3bet 계산.
      */
-//    public void addCountBeforeSaveAction(BoardDto boardDto, String action) {
-//        Board prevboard = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-//
-//        if(boardDto.getPhaseStatus() == PhaseStatus.PRE_FLOP.ordinal()) {
-//            if (action.equals(ACTION_RAISE)) {
-//                if(prevboard.getBettingSize() == 0)
-//            } else if(action.equals(ACTION_CALL)) {
-//
-//            }
-//        }
-//    }
+    @Transactional
+    public void addCountBeforeSaveAction(BoardDto boardDto, String action) {
+        Board board = boardRepository.findById(boardDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+
+        if(boardDto.getPhaseStatus() == PhaseStatus.FLOP.ordinal()) {
+            if (action.equals(PlayerAction.RAISE.getActionDetail()) || action.equals(PlayerAction.ALL_IN_RAISE.getActionDetail())) {
+                if(board.getBettingSize() == 0) {
+                    plusCBet(boardDto);
+                }
+            }
+        }
+
+        if(board.getBettingSize() != 0 && boardDto.getPhaseStatus() != PhaseStatus.PRE_FLOP.ordinal()) {
+            if (action.equals(PlayerAction.RAISE.getActionDetail()) || action.equals(PlayerAction.ALL_IN_RAISE.getActionDetail())) {
+                plusThreeBet(board);
+            }
+        }
+    }
+
+    /**
+     * wsd 계산.
+     * @param boardDto
+     */
+    @Transactional
+    public void addCountAfterShowDown(BoardDto boardDto) {
+        List<PlayerDto> players = boardDto.getPlayers();
+
+        for (PlayerDto player : players) {
+            GameResultDto gameResult = player.getGameResult();
+            if(gameResult.isWinner()) {
+                Hud hud = hudRepository.findByUserId(player.getUserId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+                hud.setWsd(hud.getWsd() + 1);
+            }
+        }
+    }
+
+    private void plusThreeBet(Board board) {
+        int raiseIdx = getPlayerIdxByPos(board, board.getBettingPos());
+        List<Player> players = board.getPlayers();
+        if(raiseIdx >= 0 && raiseIdx < players.size()) {
+            Hud hud = players.get(raiseIdx).getUser().getHud();
+            hud.setThreeBet(hud.getThreeBet() + 1);
+        }
+    }
+
+    private void plusCBet(BoardDto boardDto) {
+        HandHistory handHistory = handHistoryRepository.findByBoardIdAndGameSeq(boardDto.getId(), boardDto.getGameSeq()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        List<Action> actionList = handHistory.getActionList();
+
+        List<Action> pfActionList = actionList.stream()
+                .filter(a -> a.getDetail().contains(PlayerAction.RAISE.getActionDetail()) && a.getPhaseStatus().equals(PhaseStatus.PRE_FLOP)).collect(Collectors.toList());
+
+        if(pfActionList.size() > 0) {
+            Action pfLastRaise = pfActionList.get(pfActionList.size() - 1);
+            if(boardDto.getBettingPos() == pfLastRaise.getPosition()) {
+                Hud hud = hudRepository.findByUserId(pfLastRaise.getUserId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+                hud.setCBet(hud.getCBet() + 1);
+            }
+        }
+    }
+
+    private void plusPfr(Board board) {
+        HandHistory handHistory = handHistoryRepository.findByBoardIdAndGameSeq(board.getId(), board.getGameSeq()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        List<Action> actionList = handHistory.getActionList();
+        List<User> raiseUserList = new ArrayList<>();
+
+        for (Action action : actionList) {
+            if(action.getDetail().contains(PlayerAction.RAISE.getActionDetail())) {
+                User user = userRepository.findById(action.getUserId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+                if(!raiseUserList.contains(user)) {
+                    raiseUserList.add(user);
+                }
+            }
+        }
+
+        for (User user : raiseUserList) {
+            Hud hud = user.getHud();
+            hud.setPfr(hud.getPfr() + 1);
+        }
+    }
 
     private void plusVpipCnt(Board board) {
         List<Player> players = board.getPlayers();
@@ -190,6 +263,21 @@ public class HudService {
             hud.setWtf(hud.getWtf() + 1);
             hudRepository.save(hud);
         }
+    }
+
+    private void plusTotalHands(BoardDto boardDto) {
+        List<PlayerDto> players = boardDto.getPlayers();
+        List<Hud> hudList = new ArrayList<>();
+        for (PlayerDto player : players) {
+            Optional<Hud> findHud = hudRepository.findByUserId(player.getUserId());
+
+            if(findHud.isPresent()) {
+                Hud hud = findHud.get();
+                hud.setTotalHands(hud.getTotalHands() + 1);
+                hudList.add(hud);
+            }
+        }
+        hudRepository.saveAll(hudList);
     }
 
     private void plusPfAggressiveCnt(Player player) {

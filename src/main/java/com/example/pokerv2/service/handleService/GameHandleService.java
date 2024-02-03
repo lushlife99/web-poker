@@ -13,10 +13,10 @@ import com.example.pokerv2.model.Board;
 import com.example.pokerv2.service.ActionService;
 import com.example.pokerv2.service.BoardServiceV1;
 import com.example.pokerv2.service.HandHistoryService;
+import com.example.pokerv2.service.HudService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 import java.security.Principal;
@@ -29,6 +29,7 @@ public class GameHandleService {
     private final BoardServiceV1 boardServiceV1;
     private final ActionService actionService;
     private final HandHistoryService handHistoryService;
+    private final HudService hudService;
     private final SimpMessagingTemplate simpMessagingTemplate;
 
     private final static String TOPIC_PREFIX = "/topic/board/";
@@ -48,9 +49,10 @@ public class GameHandleService {
         return boardDto;
     }
 
-    public void action(BoardDto boardDto, String option, String userId) {
-        actionService.saveAction(boardDto, option, userId);
-        Board board = boardServiceV1.saveBoardChanges(boardDto, option, userId);
+    public void action(BoardDto boardDto, String action, String userId) {
+        hudService.addCountBeforeSaveAction(boardDto, action);
+        actionService.saveAction(boardDto, action, userId);
+        Board board = boardServiceV1.saveBoardChanges(boardDto, action, userId);
         while (true) {
             if (boardServiceV1.isGameEnd(board.getId())) {
                 endGame(board.getId());
@@ -59,8 +61,10 @@ public class GameHandleService {
             board = boardServiceV1.setNextAction(board.getId());
 
             if (board.getActionPos() == -1) {
+                hudService.addCountBeforePhaseChange(board.getId());
                 handHistoryService.savePhaseHistory(board.getId());
                 boardDto = boardServiceV1.nextPhase(board.getId());
+                hudService.addCountAfterPhaseChange(board.getId());
                 if (boardDto.getPhaseStatus() != PhaseStatus.SHOWDOWN.ordinal()) {
                     sendUpdateBoardToPlayers(board.getId(), MessageType.NEXT_PHASE_START);
                 } else {
@@ -122,6 +126,8 @@ public class GameHandleService {
             boardServiceV1.startGame(boardId);
             sendUpdateBoardToPlayers(boardId, MessageType.GAME_START);
             handHistoryService.createHandHistory(boardId);
+            actionService.saveAnteAction(boardId);
+            hudService.addCountAfterPhaseChange(boardId);
         }
 
         return boardServiceV1.getBoard(boardId);
@@ -140,6 +146,7 @@ public class GameHandleService {
         } else {
             boardDto = boardServiceV1.showDown(boardId);
             sendUpdateBoardToPlayers(boardDto, MessageType.SHOW_DOWN);
+            hudService.addCountAfterShowDown(boardDto);
             for (PlayerDto player : boardDto.getPlayers()) {
                 GameResultDto gameResult = player.getGameResult();
                 if (gameResult.isWinner()) {
