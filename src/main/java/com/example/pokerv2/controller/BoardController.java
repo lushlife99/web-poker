@@ -67,10 +67,4 @@ public class BoardController {
         return new ResponseEntity(HttpStatus.OK);
     }
 
-    @PostMapping("/end/{boardId}")
-    public ResponseEntity endGame(@PathVariable Long boardId) {
-        gameHandleService.endGameTest(boardId);
-        return new ResponseEntity(HttpStatus.OK);
-    }
-
 }

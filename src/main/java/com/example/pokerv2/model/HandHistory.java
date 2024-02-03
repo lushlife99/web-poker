@@ -21,9 +21,6 @@ public class HandHistory {
     private Long id;
     private Long boardId;
     private Long gameSeq;
-
-    @OneToMany(mappedBy = "handHistory", fetch = FetchType.LAZY, cascade = CascadeType.ALL) @Builder.Default @OrderBy("actionNo asc")
-    private List<Action> actionList = new ArrayList<>();
     private int btnPosition;
     private int potAmountPf;
     private int potAmountFlop;
@@ -34,6 +31,10 @@ public class HandHistory {
     private int communityCard3;
     private int communityCard4;
     private int communityCard5;
+    private boolean finish;
+
+    @OneToMany(mappedBy = "handHistory", fetch = FetchType.LAZY, cascade = CascadeType.ALL) @Builder.Default @OrderBy("actionNo asc")
+    private List<Action> actionList = new ArrayList<>();
 
     @OneToMany(mappedBy = "handHistory", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @Builder.Default
@@ -48,4 +49,8 @@ public class HandHistory {
     @OrderColumn(name = "card_order")
     @Builder.Default
     private List<Integer> cardList = new ArrayList<>();
+
+    @ElementCollection
+    @Builder.Default
+    private List<Long> showDownUserIdList = new ArrayList<>();
 }

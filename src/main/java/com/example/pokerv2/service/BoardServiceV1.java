@@ -35,6 +35,7 @@ public class BoardServiceV1 {
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
     private final PlayerRepository playerRepository;
+
     private static final int MAX_PLAYER = 6;
 
     /**
@@ -72,7 +73,6 @@ public class BoardServiceV1 {
      * 모두 폴드라면 -> 베팅을 한 플레이어 승리.
      * all-in인 유저가 존재한다면 : 승자를 가려야 함. show-down 진행
      *
-     * @param boardId
      * @return 다음 액션이 존재하는지 boolean 리턴.
      */
 
@@ -93,8 +93,6 @@ public class BoardServiceV1 {
         return new BoardDto(board);
     }
 
-
-    @Transactional()
     public Player buyIn(Board board, User user, int bb) {
 
         int money = user.getMoney();
@@ -241,7 +239,7 @@ public class BoardServiceV1 {
     }
 
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public void initBoard(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
@@ -367,6 +365,7 @@ public class BoardServiceV1 {
                 cardPool.add(player.getCard1());
                 cardPool.add(player.getCard2());
                 gameResultDto = HandCalculatorUtils.calculateValue(cardPool);
+                System.out.println(gameResultDto.getJokBo());
             }
             boardDto.getPlayers().get(i).setGameResult(gameResultDto);
         }

@@ -10,20 +10,14 @@ import com.example.pokerv2.enums.PlayerAction;
 import com.example.pokerv2.error.CustomException;
 import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.model.Board;
-import com.example.pokerv2.model.Player;
-import com.example.pokerv2.repository.BoardRepository;
 import com.example.pokerv2.service.ActionService;
 import com.example.pokerv2.service.BoardServiceV1;
 import com.example.pokerv2.service.HandHistoryService;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.security.Principal;
 
@@ -33,7 +27,6 @@ import java.security.Principal;
 public class GameHandleService {
 
     private final BoardServiceV1 boardServiceV1;
-    private final BoardRepository boardRepository;
     private final ActionService actionService;
     private final HandHistoryService handHistoryService;
     private final SimpMessagingTemplate simpMessagingTemplate;
@@ -41,14 +34,14 @@ public class GameHandleService {
     private final static String TOPIC_PREFIX = "/topic/board/";
 
     private final static int ACTION_TIME = 10;
-    private final static int RESULT_ANIMATION_TIME = 3;
+    private final static int RESULT_ANIMATION_TIME = 5;
 
     public BoardDto join(int requestBb, Principal principal) {
 
         BoardDto boardDto = boardServiceV1.join(requestBb, principal);
         sendUpdateBoardToPlayers(boardDto, MessageType.PLAYER_JOIN);
 
-        if(boardDto.getPhaseStatus() == PhaseStatus.WAITING.ordinal() && boardDto.getTotalPlayer() >= 2) {
+        if (boardDto.getPhaseStatus() == PhaseStatus.WAITING.ordinal() && boardDto.getTotalPlayer() >= 2) {
             boardDto = startGame(boardDto.getId());
         }
 
@@ -56,17 +49,17 @@ public class GameHandleService {
     }
 
     public void action(BoardDto boardDto, String option, String userId) {
-        System.out.println("GameHandleService.action");
         actionService.saveAction(boardDto, option, userId);
         Board board = boardServiceV1.saveBoardChanges(boardDto, option, userId);
-        while(true) {
-            if(boardServiceV1.isGameEnd(board.getId())) {
+        while (true) {
+            if (boardServiceV1.isGameEnd(board.getId())) {
                 endGame(board.getId());
                 break;
             }
             board = boardServiceV1.setNextAction(board.getId());
 
             if (board.getActionPos() == -1) {
+                handHistoryService.savePhaseHistory(board.getId());
                 boardDto = boardServiceV1.nextPhase(board.getId());
                 if (boardDto.getPhaseStatus() != PhaseStatus.SHOWDOWN.ordinal()) {
                     sendUpdateBoardToPlayers(board.getId(), MessageType.NEXT_PHASE_START);
@@ -77,23 +70,23 @@ public class GameHandleService {
                 sendUpdateBoardToPlayers(board.getId(), MessageType.NEXT_ACTION);
             }
 
-            if(boardServiceV1.isGameEnd(board.getId()) || board.getPhaseStatus() == PhaseStatus.SHOWDOWN) {
+            if (boardServiceV1.isGameEnd(board.getId()) || board.getPhaseStatus() == PhaseStatus.SHOWDOWN) {
                 endGame(board.getId());
                 break;
             }
 
-            if(boardServiceV1.isActionPlayerConnect(board.getId())) {
+            if (boardServiceV1.isActionPlayerConnect(board.getId())) {
                 break;
             }
 
             waitDisconnectPlayer();
 
-            if(boardServiceV1.isActionPlayerConnect(board.getId())) {
+            if (boardServiceV1.isActionPlayerConnect(board.getId())) {
                 break;
             } else {
                 timeOutDisconnectPlayer(board);
 
-                if(boardServiceV1.isGameEnd(board.getId())) {
+                if (boardServiceV1.isGameEnd(board.getId())) {
                     endGame(board.getId());
                     break;
                 } else {
@@ -112,20 +105,20 @@ public class GameHandleService {
     }
 
     public void exitPlayer(BoardDto boardDto, String userId) {
-        System.out.println("GameHandleService.exitPlayer");
+
         boardServiceV1.sitOut(boardDto, userId);
         sendUpdateBoardToPlayers(boardDto.getId(), MessageType.PLAYER_EXIT);
         boardDto = boardServiceV1.getBoard(boardDto.getId());
         if (boardDto.getPhaseStatus() >= PhaseStatus.PRE_FLOP.ordinal() && boardDto.getPhaseStatus() <= PhaseStatus.RIVER.ordinal() &&
                 boardServiceV1.isGameEnd(boardDto.getId())) {
-           endGame(boardDto.getId());
+            endGame(boardDto.getId());
         }
     }
 
     public BoardDto startGame(Long boardId) {
         boardServiceV1.dropDisconnectPlayers(boardId);
         BoardDto board = boardServiceV1.getBoard(boardId);
-        if(board.getTotalPlayer() >= 2) {
+        if (board.getTotalPlayer() >= 2) {
             boardServiceV1.startGame(boardId);
             sendUpdateBoardToPlayers(boardId, MessageType.GAME_START);
             handHistoryService.createHandHistory(boardId);
@@ -133,19 +126,19 @@ public class GameHandleService {
 
         return boardServiceV1.getBoard(boardId);
     }
+
     public void endGame(Long boardId) {
 
-        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-        boardServiceV1.initPhase(board.getId());
+        boardServiceV1.initPhase(boardId);
         int resultAnimationCount = 0;
         BoardDto boardDto;
 
-        if (boardServiceV1.isGameEnd(board.getId())) {
-            boardDto = boardServiceV1.winOnePlayer(board.getId());
+        if (boardServiceV1.isGameEnd(boardId)) {
+            boardDto = boardServiceV1.winOnePlayer(boardId);
             sendUpdateBoardToPlayers(boardDto, MessageType.GAME_END);
             resultAnimationCount = 1;
         } else {
-            boardDto = boardServiceV1.showDown(board.getId());
+            boardDto = boardServiceV1.showDown(boardId);
             sendUpdateBoardToPlayers(boardDto, MessageType.SHOW_DOWN);
             for (PlayerDto player : boardDto.getPlayers()) {
                 GameResultDto gameResult = player.getGameResult();
@@ -155,17 +148,19 @@ public class GameHandleService {
             }
         }
 
+        handHistoryService.end(boardDto);
+
         try {
             Thread.sleep(resultAnimationCount * RESULT_ANIMATION_TIME * 1000);
         } catch (InterruptedException e) {
             e.getStackTrace();
         }
 
-        if(boardDto.getGameSeq() != boardServiceV1.getBoard(boardId).getGameSeq()) {
+        if (boardDto.getGameSeq() != boardServiceV1.getBoard(boardId).getGameSeq()) {
             return;
         }
 
-        boardServiceV1.initBoard(board.getId());
+        boardServiceV1.initBoard(boardId);
         sendUpdateBoardToPlayers(boardId, MessageType.INIT_BOARD);
 
         try {
@@ -174,7 +169,7 @@ public class GameHandleService {
             e.getStackTrace();
         }
 
-        if(boardDto.getGameSeq() != boardServiceV1.getBoard(boardId).getGameSeq()) {
+        if (boardDto.getGameSeq() != boardServiceV1.getBoard(boardId).getGameSeq()) {
             return;
         }
 
@@ -187,18 +182,6 @@ public class GameHandleService {
         } catch (InterruptedException e) {
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
-    }
-
-    /**
-     * endGameTest
-     * test 끝나면 삭제
-     * @param boardId
-     */
-    @Transactional
-    public void endGameTest(Long boardId) {
-        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-        board.setPhaseStatus(PhaseStatus.SHOWDOWN);
-        endGame(boardId);
     }
 
     private void sendUpdateBoardToPlayers(Long boardId, MessageType messageType) {

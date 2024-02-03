@@ -1,6 +1,7 @@
 package com.example.pokerv2.service;
 
 import com.example.pokerv2.dto.BoardDto;
+import com.example.pokerv2.dto.PlayerDto;
 import com.example.pokerv2.enums.PlayerAction;
 import com.example.pokerv2.error.CustomException;
 import com.example.pokerv2.error.ErrorCode;
@@ -36,10 +37,10 @@ public class ActionService {
         User actionUser = userRepository.findByUserId(userId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         HandHistory handHistory = handHistoryRepository.findByBoardIdAndGameSeq(board.getId(), board.getGameSeq()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         String actionDetail = "";
-        Player actionPlayer = null;
-        for (Player player : board.getPlayers()) {
-            if(player.getUser().getId() == actionUser.getId()) {
-                actionPlayer = player;
+        PlayerDto actionPlayer = null;
+        for (PlayerDto playerDto : boardDto.getPlayers()) {
+            if(playerDto.getUserId() == actionUser.getId()) {
+                actionPlayer = playerDto;
                 break;
             }
         }

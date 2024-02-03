@@ -1,11 +1,16 @@
 package com.example.pokerv2.service;
 
+import com.example.pokerv2.dto.BoardDto;
+import com.example.pokerv2.dto.GameResultDto;
 import com.example.pokerv2.dto.HandHistoryDto;
+import com.example.pokerv2.dto.PlayerDto;
+import com.example.pokerv2.enums.PhaseStatus;
 import com.example.pokerv2.error.CustomException;
 import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.model.*;
 import com.example.pokerv2.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
@@ -51,18 +56,62 @@ public class HandHistoryService {
         return handHistory;
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void savePhaseHistory(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        HandHistory handHistory = handHistoryRepository.findByBoardIdAndGameSeq(board.getId(), board.getGameSeq()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        List<Integer> totalCallSize = board.getTotalCallSize();
+        int potAmount = board.getPot();
+
+        for (Integer callSize : totalCallSize) {
+            potAmount += callSize;
+        }
+
+        if(board.getPhaseStatus() == PhaseStatus.PRE_FLOP) {
+            handHistory.setPotAmountPf(potAmount);
+        } else if (board.getPhaseStatus() == PhaseStatus.FLOP) {
+            handHistory.setPotAmountFlop(potAmount);
+        } else if (board.getPhaseStatus() == PhaseStatus.TURN) {
+            handHistory.setPotAmountTurn(potAmount);
+        } else if (board.getPhaseStatus() == PhaseStatus.RIVER) {
+            handHistory.setPotAmountRiver(potAmount);
+        } else throw new CustomException(ErrorCode.BAD_REQUEST);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void end(BoardDto boardDto) {
+        HandHistory handHistory = handHistoryRepository.findByBoardIdAndGameSeq(boardDto.getId(), boardDto.getGameSeq()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        List<PlayerDto> players = boardDto.getPlayers();
+        List<Long> showDownUserIdList = handHistory.getShowDownUserIdList();
+        handHistory.setFinish(true);
+        int phaseStatus = boardDto.getPhaseStatus();
+
+        if(phaseStatus == PhaseStatus.SHOWDOWN.ordinal()) {
+            for (PlayerDto player : players) {
+                GameResultDto gameResult = player.getGameResult();
+                if(gameResult.getHandValue() != 0L) {
+                    showDownUserIdList.add(player.getUserId());
+                }
+            }
+        }
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED, readOnly = true)
     public List<HandHistoryDto> get(String userId) {
         User user = userRepository.findByUserId(userId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<UserHandHistory> connectionList = user.getHandHistoryList();
         List<HandHistoryDto> handHistoryList = new ArrayList<>();
 
         for (UserHandHistory userHandHistory : connectionList) {
-            if(userHandHistory.getUser().equals(user)) {
+            if(userHandHistory.getUser().equals(user) ) {
                 HandHistory handHistory = userHandHistory.getHandHistory();
-                handHistoryList.add(new HandHistoryDto(handHistory));
+                if(handHistory.isFinish()) {
+                    handHistoryList.add(new HandHistoryDto(handHistory));
+
+                }
             }
         }
+        System.out.println(handHistoryList);
         return handHistoryList;
     }
 

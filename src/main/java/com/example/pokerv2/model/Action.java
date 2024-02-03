@@ -19,8 +19,7 @@ public class Action {
     private Long id;
     private int actionNo;
     private Long userId;
-    @Enumerated(EnumType.ORDINAL)
-    private Position position;
+    private int position;
     @Enumerated(EnumType.ORDINAL)
     private PhaseStatus phaseStatus;
     @Builder.Default
