@@ -14,15 +14,12 @@ import com.example.pokerv2.repository.PlayerRepository;
 import com.example.pokerv2.repository.UserRepository;
 import com.example.pokerv2.utils.HandCalculatorUtils;
 import com.example.pokerv2.utils.PotDistributorUtils;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
@@ -45,48 +42,43 @@ public class BoardServiceV1 {
      * 3. Player 입장.
      */
 
+    @Transactional(isolation = Isolation.READ_COMMITTED, readOnly = true)
+    public List<BoardDto> getBoardList(int blind) {
+        List<Board> boardList = boardRepository.findByBlind(blind);
+        List<BoardDto> boardDtoList = new ArrayList<>();
 
+        for (Board board : boardList) {
+            boardDtoList.add(new BoardDto(board));
+        }
 
-    /**
-     * 24/01/10 chan
-     * <p>
-     * 액션을 받을 때 고려해야 할 것
-     * 1. 플레이어들의 액션이 다 끝났는가? true -> 다음 페이즈. false -> 다음 액션 순서 정해주기
-     * 플레이어들의 액션이 다 끝났는지 어떻게 알 수 있을까?
-     * <p>
-     * 베팅을 받을 수 있는 상태의 플레이어가 없을 때 -> PlayerStatus 확인
-     * <p>
-     * 2. 플레이어가 어떤 액션을 했는지 확인.
-     * fold, all-in -> playerStatus를 확인
-     * call -> board.bet == player.callSize
-     * bet -> board.bet < player.callSize
-     * <p>
-     * 3. 다음 액션 순서를 정해주는 방법
-     * <p>
-     * 먼저 현재 액션 순서인 플레이어를 기준으로 잡는다.
-     * 1. 그 다음 순서의 플레이어가 액션을 할 수 있는 상태인지 체크한다. -> playerStatus
-     * 2. 만약 액션을 할 수 있는 상태라면 마지막 액션을 했던 플레이어인지 체크한다.
-     * <p>
-     * 만약 1,2 모두 true : 현재 보드의 모든 플레이어들의 의사결정이 완료. -> 다음 페이즈 진행
-     * 만약 1 -> true, 2 -> false : 그 플레이어가 다음 액션 순서이다.
-     * 만약 1 -> false : 모든 플레이어가 액션을 할 수 없는 상태. 그러니까 베팅을 한 유저를 제외한 모든 유저들이 fold or all-in인 상태.
-     * 모두 폴드라면 -> 베팅을 한 플레이어 승리.
-     * all-in인 유저가 존재한다면 : 승자를 가려야 함. show-down 진행
-     *
-     * @return 다음 액션이 존재하는지 boolean 리턴.
-     */
-
+        return boardDtoList;
+    }
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
-    public BoardDto join(int requestBb, Principal principal) {
+    public BoardDto joinRandom(int blind, int requestBb, Principal principal) {
         User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Board board;
 
-        List<Board> playableBoard = boardRepository.findFirstPlayableBoard(user.getId(), PageRequest.of(0, 1));
+        List<Board> playableBoard = boardRepository.findFirstPlayableBoard(user.getId(), blind, PageRequest.of(0, 1));
 
         if (playableBoard.size() != 0)
             board = playableBoard.get(0);
 
-        else board = Board.builder().blind(1000).phaseStatus(PhaseStatus.WAITING).gameSeq(0L).build();
+        else board = Board.builder().blind(blind).phaseStatus(PhaseStatus.WAITING).gameSeq(0L).build();
+        Player player = buyIn(board, user, requestBb);
+        sitIn(board, player);
+        boardRepository.save(board);
+        return new BoardDto(board);
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
+    public BoardDto join(Long boardId, int requestBb, Principal principal) {
+        User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+
+        if(board.getTotalPlayer() >= MAX_PLAYER) {
+            throw new CustomException(ErrorCode.MAX_PLAYER_SIZE);
+        }
+
         Player player = buyIn(board, user, requestBb);
         sitIn(board, player);
         boardRepository.save(board);
@@ -365,7 +357,6 @@ public class BoardServiceV1 {
                 cardPool.add(player.getCard1());
                 cardPool.add(player.getCard2());
                 gameResultDto = HandCalculatorUtils.calculateValue(cardPool);
-                System.out.println(gameResultDto.getJokBo());
             }
             boardDto.getPlayers().get(i).setGameResult(gameResultDto);
         }

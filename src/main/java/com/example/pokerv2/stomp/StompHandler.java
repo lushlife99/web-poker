@@ -25,6 +25,7 @@ public class StompHandler implements ChannelInterceptor {
     private final PlayerService playerLifeCycleService;
     private static final String USERNAME_HEADER = "userId";
     private static final String PASSWORD_HEADER = "password";
+    private static final String DISCONNECT_OPTION = "disconnect-option";
 
     @Override
     public Message<?> preSend(final Message<?> message, final MessageChannel channel) throws AuthenticationException {

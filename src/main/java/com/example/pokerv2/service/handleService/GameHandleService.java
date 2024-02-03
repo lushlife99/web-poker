@@ -17,6 +17,7 @@ import com.example.pokerv2.service.HudService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
 import java.security.Principal;
@@ -37,9 +38,20 @@ public class GameHandleService {
     private final static int ACTION_TIME = 10;
     private final static int RESULT_ANIMATION_TIME = 5;
 
-    public BoardDto join(int requestBb, Principal principal) {
+    public BoardDto joinRandomBoard(int blind, int requestBb, Principal principal) {
 
-        BoardDto boardDto = boardServiceV1.join(requestBb, principal);
+        BoardDto boardDto = boardServiceV1.joinRandom(blind, requestBb, principal);
+        sendUpdateBoardToPlayers(boardDto, MessageType.PLAYER_JOIN);
+
+        if (boardDto.getPhaseStatus() == PhaseStatus.WAITING.ordinal() && boardDto.getTotalPlayer() >= 2) {
+            boardDto = startGame(boardDto.getId());
+        }
+
+        return boardDto;
+    }
+
+    public BoardDto join(Long boardId, int requestBb, Principal principal) {
+        BoardDto boardDto = boardServiceV1.join(boardId, requestBb, principal);
         sendUpdateBoardToPlayers(boardDto, MessageType.PLAYER_JOIN);
 
         if (boardDto.getPhaseStatus() == PhaseStatus.WAITING.ordinal() && boardDto.getTotalPlayer() >= 2) {
