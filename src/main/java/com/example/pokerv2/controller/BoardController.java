@@ -2,6 +2,8 @@ package com.example.pokerv2.controller;
 
 import com.example.pokerv2.dto.BoardDto;
 import com.example.pokerv2.enums.PhaseStatus;
+import com.example.pokerv2.error.CustomException;
+import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.service.BoardServiceV1;
 import com.example.pokerv2.service.handleService.GameHandleService;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,13 +33,17 @@ public class BoardController {
     }
 
     @PostMapping("/joinGame")
-    public BoardDto joinGame(@RequestParam int bb, Principal principal) {
-        return gameHandleService.join(bb, principal);
+    public BoardDto joinGame(@RequestParam int blind, @RequestParam int bb, Principal principal) {
+        return gameHandleService.joinRandomBoard(blind, bb, principal);
+    }
+
+    @PostMapping("/joinGame/{boardId}")
+    public BoardDto joinGame(@RequestParam Long boardId, @RequestParam int bb, Principal principal) {
+        return gameHandleService.join(boardId, bb, principal);
     }
 
     @MessageMapping("/board/action/{option}")
     public void action(@RequestBody BoardDto boardDto, @DestinationVariable String option, Principal principal){
-
         gameHandleService.action(boardDto, option, principal.getName());
     }
 
@@ -48,6 +55,16 @@ public class BoardController {
     @MessageMapping("/board/exit")
     public void exitGame(@RequestBody BoardDto board, Principal principal) {
         gameHandleService.exitPlayer(board, principal.getName());
+    }
+
+    @GetMapping("/search/{blind}")
+    public List<BoardDto> getBoardList(@PathVariable int blind) {
+        return boardServiceV1.getBoardList(blind);
+    }
+
+    @MessageMapping("/errorTest")
+    public void test(){
+        throw new CustomException(ErrorCode.BAD_REQUEST);
     }
 
     /**

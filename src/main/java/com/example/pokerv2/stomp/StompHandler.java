@@ -25,6 +25,8 @@ public class StompHandler implements ChannelInterceptor {
     private final PlayerService playerLifeCycleService;
     private static final String USERNAME_HEADER = "userId";
     private static final String PASSWORD_HEADER = "password";
+    private static final String DISCONNECT_OPTION = "disconnect-option";
+    private static final String disconnectValue = "exit";
 
     @Override
     public Message<?> preSend(final Message<?> message, final MessageChannel channel) throws AuthenticationException {
@@ -42,7 +44,8 @@ public class StompHandler implements ChannelInterceptor {
             }
         }
         else if (StompCommand.DISCONNECT == accessor.getCommand()) {
-            if(accessor.getUser() != null) {
+            final String disconnect_option = accessor.getFirstNativeHeader(DISCONNECT_OPTION);
+            if(accessor.getUser() != null && disconnect_option != null && disconnect_option.equals(disconnectValue)) {
                 playerLifeCycleService.setDisconnect(accessor.getUser());
             }
         }

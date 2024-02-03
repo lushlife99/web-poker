@@ -59,12 +59,12 @@ public class HandHistoryService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void savePhaseHistory(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        List<Player> players = board.getPlayers();
         HandHistory handHistory = handHistoryRepository.findByBoardIdAndGameSeq(board.getId(), board.getGameSeq()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-        List<Integer> totalCallSize = board.getTotalCallSize();
         int potAmount = board.getPot();
 
-        for (Integer callSize : totalCallSize) {
-            potAmount += callSize;
+        for (Player player : players) {
+            potAmount += player.getPhaseCallSize();
         }
 
         if(board.getPhaseStatus() == PhaseStatus.PRE_FLOP) {
@@ -111,7 +111,6 @@ public class HandHistoryService {
                 }
             }
         }
-        System.out.println(handHistoryList);
         return handHistoryList;
     }
 

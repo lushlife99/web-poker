@@ -2,6 +2,7 @@ package com.example.pokerv2.config;
 
 import com.example.pokerv2.model.User;
 import com.example.pokerv2.repository.UserRepository;
+import com.example.pokerv2.service.AuthFailureHandler;
 import com.example.pokerv2.service.UserAuthenticationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -23,6 +24,7 @@ public class SecurityConfig  {
 
     private final UserAuthenticationService userAuthenticationService;
     private final UserRepository userRepository;
+    private final AuthFailureHandler authFailureHandler;
     private final static String SUBSCRIBE_HEADER = "SUBSCRIBE-ID";
     @Bean
     public BCryptPasswordEncoder encodePwd() {
@@ -47,16 +49,16 @@ public class SecurityConfig  {
                                     if(user.isPresent()) {
                                         httpServletResponse.setHeader(SUBSCRIBE_HEADER, user.get().getId().toString());
                                     }
-                                })
+                                }).failureHandler(authFailureHandler)
                 )
                 .userDetailsService(userAuthenticationService);
 
         return http.build();
     }
 
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(userAuthenticationService).passwordEncoder(encodePwd());
-    }
+//    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+//        auth.userDetailsService(userAuthenticationService).passwordEncoder(encodePwd());
+//    }
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
