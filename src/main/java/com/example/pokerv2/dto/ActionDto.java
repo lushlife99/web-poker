@@ -26,7 +26,7 @@ public class ActionDto {
         this.id = action.getId();
         this.actionNo = action.getActionNo();
         this.userId = action.getUserId();
-        this.actPosition = action.getPosition().getPosNum();
+        this.actPosition = action.getPosition();
         this.phaseStatus = action.getPhaseStatus().ordinal();
         this.detail = action.getDetail();
     }

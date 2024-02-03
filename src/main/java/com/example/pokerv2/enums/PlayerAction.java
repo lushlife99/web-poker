@@ -12,6 +12,7 @@ public enum PlayerAction {
     ALL_IN_CALL("allInCall"),
     RAISE("raise"),
     ALL_IN_RAISE("allInRaise");
+
     private final String actionDetail;
 
 }

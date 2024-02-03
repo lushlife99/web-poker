@@ -4,6 +4,7 @@ import com.example.pokerv2.enums.PhaseStatus;
 import com.example.pokerv2.enums.PlayerStatus;
 import com.example.pokerv2.error.CustomException;
 import com.example.pokerv2.error.ErrorCode;
+import com.example.pokerv2.model.Board;
 import com.example.pokerv2.model.Player;
 import com.example.pokerv2.model.User;
 import com.example.pokerv2.repository.PlayerRepository;
@@ -32,8 +33,12 @@ public class PlayerService {
         if (disconnectedUser.isPresent()) {
             User user = disconnectedUser.get();
             List<Player> playerList = user.getPlayerList();
+            List<Player> exitList = new ArrayList<>();
             for (Player player : playerList) {
-
+                Board board = player.getBoard();
+                if(board.getTotalPlayer() == 1) {
+                    exitList.add(player);
+                }
                 if (player.getStatus() == PlayerStatus.FOLD) {
                     player.setStatus(PlayerStatus.DISCONNECT_FOLD);
                 } else if (player.getStatus() == PlayerStatus.PLAY) {
@@ -43,6 +48,8 @@ public class PlayerService {
                 }
 
             }
+
+            playerRepository.deleteAll(exitList);
         }
     }
 
@@ -52,12 +59,15 @@ public class PlayerService {
         List<Player> playerList = user.getPlayerList();
 
         for (Player player : playerList) {
-            if (player.getStatus() == PlayerStatus.DISCONNECT_ALL_IN) {
-                player.setStatus(PlayerStatus.ALL_IN);
-            } else if (player.getStatus() == PlayerStatus.DISCONNECT_PLAYED) {
-                player.setStatus(PlayerStatus.PLAY);
-            } else {
-                player.setStatus(PlayerStatus.FOLD);
+            Board board = player.getBoard();
+            if(board.getPhaseStatus().ordinal() >= PhaseStatus.PRE_FLOP.ordinal() && board.getPhaseStatus().ordinal() <= PhaseStatus.RIVER.ordinal()) {
+                if (player.getStatus() == PlayerStatus.DISCONNECT_ALL_IN) {
+                    player.setStatus(PlayerStatus.ALL_IN);
+                } else if (player.getStatus() == PlayerStatus.DISCONNECT_PLAYED) {
+                    player.setStatus(PlayerStatus.PLAY);
+                } else if (player.getStatus() == PlayerStatus.DISCONNECT_FOLD) {
+                    player.setStatus(PlayerStatus.FOLD);
+                }
             }
         }
 

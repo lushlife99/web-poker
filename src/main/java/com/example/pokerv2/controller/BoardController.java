@@ -1,9 +1,11 @@
 package com.example.pokerv2.controller;
 
 import com.example.pokerv2.dto.BoardDto;
+import com.example.pokerv2.enums.PhaseStatus;
 import com.example.pokerv2.service.BoardServiceV1;
 import com.example.pokerv2.service.handleService.GameHandleService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.List;
 
+@Slf4j
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/board")
@@ -61,12 +64,6 @@ public class BoardController {
     @PostMapping("/start/{boardId}")
     public ResponseEntity startGame(@PathVariable Long boardId) {
         gameHandleService.startGame(boardId);
-        return new ResponseEntity(HttpStatus.OK);
-    }
-
-    @PostMapping("/end/{boardId}")
-    public ResponseEntity endGame(@PathVariable Long boardId) {
-        gameHandleService.endGameTest(boardId);
         return new ResponseEntity(HttpStatus.OK);
     }
 
