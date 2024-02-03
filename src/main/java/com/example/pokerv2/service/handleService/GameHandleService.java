@@ -1,9 +1,6 @@
 package com.example.pokerv2.service.handleService;
 
-import com.example.pokerv2.dto.BoardDto;
-import com.example.pokerv2.dto.GameResultDto;
-import com.example.pokerv2.dto.MessageDto;
-import com.example.pokerv2.dto.PlayerDto;
+import com.example.pokerv2.dto.*;
 import com.example.pokerv2.enums.MessageType;
 import com.example.pokerv2.enums.PhaseStatus;
 import com.example.pokerv2.enums.PlayerAction;
@@ -21,6 +18,7 @@ import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
 import java.security.Principal;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -32,6 +30,7 @@ public class GameHandleService {
     private final HandHistoryService handHistoryService;
     private final HudService hudService;
     private final SimpMessagingTemplate simpMessagingTemplate;
+    private final static String ERROR_PREFIX = "/queue/error/";
 
     private final static String TOPIC_PREFIX = "/topic/board/";
 
@@ -180,6 +179,12 @@ public class GameHandleService {
         }
 
         boardServiceV1.initBoard(boardId);
+        List<PlayerDto> playerDtos = boardServiceV1.chargeMoney(boardId);
+
+        for (PlayerDto playerDto : playerDtos) {
+            sendErrorToPlayer(boardId, playerDto.getUserId(), new CustomException(ErrorCode.NOT_ENOUGH_MONEY));
+        }
+
         sendUpdateBoardToPlayers(boardId, MessageType.INIT_BOARD);
 
         try {
@@ -209,5 +214,9 @@ public class GameHandleService {
 
     private void sendUpdateBoardToPlayers(BoardDto boardDto, MessageType messageType) {
         simpMessagingTemplate.convertAndSend(TOPIC_PREFIX + boardDto.getId(), new MessageDto(messageType.getDetail(), boardDto));
+    }
+
+    private void sendErrorToPlayer(Long boardId, Long userId, CustomException ex) {
+        simpMessagingTemplate.convertAndSend(ERROR_PREFIX + boardId + "/" + userId, new MessageDto(MessageType.EXIT_BOARD.getDetail(), ex.getMessage()));
     }
 }

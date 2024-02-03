@@ -16,6 +16,7 @@ import com.example.pokerv2.utils.HandCalculatorUtils;
 import com.example.pokerv2.utils.PotDistributorUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
@@ -228,6 +229,30 @@ public class BoardServiceV1 {
         }
 
         return false;
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
+    public List<PlayerDto> chargeMoney(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        List<Player> players = board.getPlayers();
+        List<PlayerDto> unChargePlayerList = new ArrayList<>();
+
+        for (Player player : players) {
+            if(player.getMoney() <= board.getBlind() * 100) {
+                int chargeMoney = board.getBlind() * 100 - player.getMoney();
+                User user = player.getUser();
+                if(user.getMoney() < chargeMoney) {
+                    unChargePlayerList.add(new PlayerDto(player));
+                    continue;
+                }
+
+                user.setMoney(user.getMoney() - chargeMoney);
+                player.setMoney(player.getMoney() + chargeMoney);
+
+            }
+        }
+
+        return unChargePlayerList;
     }
 
 
