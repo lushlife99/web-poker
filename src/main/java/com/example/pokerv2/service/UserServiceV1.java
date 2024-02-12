@@ -13,6 +13,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -76,15 +77,21 @@ public class UserServiceV1 {
 
     public UserDto updateUserImage(MultipartFile file, Principal principal) {
         User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
-        System.out.println(file.getSize());
-        Path path = Paths.get(rootFilePath, user.getImagePath()).toAbsolutePath();
         try {
-            Files.createDirectories(path);
-            file.transferTo(new File(path.toString()));
+            Path path = Paths.get(rootFilePath, user.getImagePath()).toAbsolutePath();
+            if (user.getImagePath() != null) {
+                Files.deleteIfExists(path);
+            }
+
+            Path newPath = Paths.get(rootFilePath, user.getImagePath()).toAbsolutePath();
+            Files.createDirectories(newPath.getParent());
+            file.transferTo(newPath.toFile());
+
         } catch (IOException e) {
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
 
         return new UserDto(user);
     }
-}
+
+};
