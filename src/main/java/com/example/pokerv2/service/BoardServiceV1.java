@@ -76,6 +76,8 @@ public class BoardServiceV1 {
         User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
 
+        System.out.println(new BoardDto(board));
+
         if(board.getTotalPlayer() >= MAX_PLAYER) {
             throw new CustomException(ErrorCode.MAX_PLAYER_SIZE);
         }

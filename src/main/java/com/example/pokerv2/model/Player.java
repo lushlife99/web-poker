@@ -19,9 +19,6 @@ public class Player {
     @Id @GeneratedValue
     private Long id;
 
-    @Version
-    private Integer version;
-
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
