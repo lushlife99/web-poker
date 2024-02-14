@@ -146,7 +146,6 @@ public class GameHandleService {
 
     public void endGame(Long boardId) {
 
-        boardServiceV1.initPhase(boardId);
         int resultAnimationCount = 0;
         BoardDto boardDto;
 
