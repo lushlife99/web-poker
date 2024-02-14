@@ -24,7 +24,7 @@ public class PotDistributorUtils {
 
     private PotDistributorUtils() {}
 
-    public static void distribute(BoardDto boardDto) {
+    public static void calculate(BoardDto boardDto) {
         List<PlayerDto> players = boardDto.getPlayers();
         players.sort(HAND_VALUE_COMPARATOR.reversed());
 

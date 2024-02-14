@@ -315,12 +315,17 @@ public class BoardServiceV1 {
         int maxCallSize = -1;
         List<Player> players = board.getPlayers();
 
+        for (int i = 0; i < board.getTotalPlayer(); i++) {
+            Player player = players.get(i);
+            if (player.getPosition().getPosNum() == board.getBettingPos()) {
+                continue;
+            }
 
-        for (int i = bettingPlayerIdx + 1; i < bettingPlayerIdx + 1 + board.getTotalPlayer(); i++) {
-            Player player = players.get(i % board.getTotalPlayer());
-            if (player.getPhaseCallSize() == bettingSize)
+            if (player.getPhaseCallSize() == bettingSize) {
                 return;
-            else if (maxCallSize < player.getPhaseCallSize()) {
+            }
+
+            if (maxCallSize < player.getPhaseCallSize()) {
                 maxCallSize = player.getPhaseCallSize();
             }
         }
@@ -371,9 +376,23 @@ public class BoardServiceV1 {
         board.setPhaseStatus(PhaseStatus.SHOWDOWN);
         refundOverBet(board);
         BoardDto boardDto = determineWinner(board);
-        PotDistributorUtils.distribute(boardDto);
+        distribute(boardDto);
 
         return boardDto;
+    }
+
+    @Transactional
+    public void distribute(BoardDto boardDto) {
+
+        PotDistributorUtils.calculate(boardDto);
+
+        for (PlayerDto playerDto : boardDto.getPlayers()) {
+            GameResultDto gameResult = playerDto.getGameResult();
+            if(gameResult.isWinner()) {
+                Player player = playerRepository.findById(playerDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+                player.setMoney(player.getMoney() + gameResult.getEarnedMoney());
+            }
+        }
     }
 
     private static BoardDto determineWinner(Board board) {
