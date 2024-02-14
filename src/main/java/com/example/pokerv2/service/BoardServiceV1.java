@@ -351,6 +351,10 @@ public class BoardServiceV1 {
         Player overBetPlayer = players.get(bettingPlayerIdx);
         overBetPlayer.setMoney(overBetPlayer.getMoney() + bettingSize - maxCallSize);
         overBetPlayer.setPhaseCallSize(maxCallSize);
+        System.out.println(overBetPlayer.getMoney());
+        System.out.println(bettingSize);
+        System.out.println(maxCallSize);
+        boardRepository.save(board);
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
