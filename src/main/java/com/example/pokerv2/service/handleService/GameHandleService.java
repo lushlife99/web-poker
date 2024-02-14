@@ -151,10 +151,6 @@ public class GameHandleService {
         BoardDto boardDto;
 
         if (boardServiceV1.isShowDown(boardId)) {
-            boardDto = boardServiceV1.winOnePlayer(boardId);
-            sendUpdateBoardToPlayers(boardDto, MessageType.GAME_END);
-            resultAnimationCount = 1;
-        } else {
             boardDto = boardServiceV1.showDown(boardId);
             sendUpdateBoardToPlayers(boardDto, MessageType.SHOW_DOWN);
             hudService.addCountAfterShowDown(boardDto);
@@ -164,6 +160,11 @@ public class GameHandleService {
                     resultAnimationCount++;
                 }
             }
+
+        } else {
+            boardDto = boardServiceV1.winOnePlayer(boardId);
+            sendUpdateBoardToPlayers(boardDto, MessageType.GAME_END);
+            resultAnimationCount = 1;
         }
 
         handHistoryService.end(boardDto);
