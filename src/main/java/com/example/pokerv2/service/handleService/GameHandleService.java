@@ -65,7 +65,7 @@ public class GameHandleService {
         actionService.saveAction(boardDto, action, userId);
         Board board = boardServiceV1.saveBoardChanges(boardDto, action, userId);
         while (true) {
-            if (action.equals(PlayerAction.FOLD) && boardServiceV1.isGameEnd(board.getId())) {
+            if (boardServiceV1.isGameEnd(board.getId())) {
                 endGame(board.getId());
                 break;
             }

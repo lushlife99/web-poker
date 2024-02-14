@@ -229,6 +229,8 @@ public class BoardServiceV1 {
         for (Player player : board.getPlayers()) {
             if (player.getStatus() == PlayerStatus.PLAY || player.getStatus() == PlayerStatus.DISCONNECT_PLAYED) {
                 actionableCount++;
+            } else if(player.getStatus() == PlayerStatus.ALL_IN && player.getPosition().getPosNum() == board.getBettingPos()) {
+                actionableCount++;
             }
         }
 
