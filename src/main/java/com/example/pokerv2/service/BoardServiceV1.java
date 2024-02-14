@@ -391,26 +391,23 @@ public class BoardServiceV1 {
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public BoardDto showDown(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        List<Player> players = board.getPlayers();
         board.setPhaseStatus(PhaseStatus.SHOWDOWN);
         refundOverBet(board);
         BoardDto boardDto = determineWinner(board);
-        distribute(boardDto);
-
-        return boardDto;
-    }
-
-    @Transactional
-    public void distribute(BoardDto boardDto) {
         PotDistributorUtils.calculate(boardDto);
 
         for (PlayerDto playerDto : boardDto.getPlayers()) {
             GameResultDto gameResult = playerDto.getGameResult();
             if(gameResult.isWinner()) {
-                Player player = playerRepository.findById(playerDto.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+                Player player = players.get(getPlayerIdxByPos(board, playerDto.getPosition()));
                 player.setMoney(player.getMoney() + gameResult.getEarnedMoney());
             }
         }
+
+        return boardDto;
     }
+
 
     private static BoardDto determineWinner(Board board) {
         List<Player> players = board.getPlayers();
