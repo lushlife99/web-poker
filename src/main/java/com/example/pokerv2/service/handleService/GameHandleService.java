@@ -218,6 +218,6 @@ public class GameHandleService {
     }
 
     private void sendErrorToPlayer(Long boardId, Long userId, CustomException ex) {
-        simpMessagingTemplate.convertAndSend(ERROR_PREFIX + boardId + "/" + userId, new MessageDto(MessageType.EXIT_BOARD.getDetail(), ex.getMessage()));
+        simpMessagingTemplate.convertAndSend(ERROR_PREFIX + boardId + "/" + userId, new MessageDto(MessageType.EXIT_BOARD.getDetail(), ex.getErrorCode().getDetail()));
     }
 }
