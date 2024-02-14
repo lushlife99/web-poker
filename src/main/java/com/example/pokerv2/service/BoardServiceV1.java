@@ -404,7 +404,7 @@ public class BoardServiceV1 {
                 player.setMoney(player.getMoney() + gameResult.getEarnedMoney());
             }
         }
-
+        boardRepository.save(board);
         return boardDto;
     }
 
