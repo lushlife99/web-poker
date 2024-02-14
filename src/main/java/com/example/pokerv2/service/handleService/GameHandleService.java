@@ -7,6 +7,7 @@ import com.example.pokerv2.enums.PlayerAction;
 import com.example.pokerv2.error.CustomException;
 import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.model.Board;
+import com.example.pokerv2.model.Player;
 import com.example.pokerv2.service.ActionService;
 import com.example.pokerv2.service.BoardServiceV1;
 import com.example.pokerv2.service.HandHistoryService;
@@ -149,7 +150,7 @@ public class GameHandleService {
         int resultAnimationCount = 0;
         BoardDto boardDto;
 
-        if (boardServiceV1.isGameEnd(boardId)) {
+        if (boardServiceV1.isShowDown(boardId)) {
             boardDto = boardServiceV1.winOnePlayer(boardId);
             sendUpdateBoardToPlayers(boardDto, MessageType.GAME_END);
             resultAnimationCount = 1;

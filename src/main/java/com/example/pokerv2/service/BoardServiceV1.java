@@ -241,6 +241,24 @@ public class BoardServiceV1 {
         return false;
     }
 
+    @Transactional
+    public boolean isShowDown(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        int foldCount = 0;
+        List<Player> players = board.getPlayers();
+        for (Player player : players) {
+            if(player.getStatus().equals(PlayerStatus.FOLD) || player.getStatus().equals(PlayerStatus.DISCONNECT_FOLD)) {
+                foldCount++;
+            }
+        }
+
+        if(foldCount == board.getTotalPlayer() - 1) {
+            return false;
+        }
+
+        return true;
+    }
+
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public List<PlayerDto> chargeMoney(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
@@ -383,7 +401,6 @@ public class BoardServiceV1 {
 
     @Transactional
     public void distribute(BoardDto boardDto) {
-
         PotDistributorUtils.calculate(boardDto);
 
         for (PlayerDto playerDto : boardDto.getPlayers()) {
@@ -478,21 +495,6 @@ public class BoardServiceV1 {
         board.setBettingPos(betPos);
         board.setLastActionTime(LocalDateTime.now());
         return boardRepository.save(board);
-    }
-
-    private void saveAction(BoardDto boardDto) {
-        List<PlayerDto> players = boardDto.getPlayers();
-        PlayerDto actPlayer = players.get(boardDto.getActionPos());
-        if (actPlayer.getStatus() == PlayerStatus.FOLD.ordinal()) {
-            //fold
-
-        } else if (actPlayer.getStatus() == PlayerStatus.ALL_IN.ordinal()) {
-            //all-in
-        } else if (actPlayer.getStatus() == PlayerStatus.PLAY.ordinal() && boardDto.getActionPos() == boardDto.getBettingPos()) {
-            //bet
-        } else if (actPlayer.getStatus() == PlayerStatus.PLAY.ordinal() && actPlayer.getPhaseCallSize() == boardDto.getBettingSize()) {
-            //call
-        } else throw new CustomException(ErrorCode.BAD_REQUEST);
     }
 
 
