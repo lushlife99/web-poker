@@ -339,10 +339,6 @@ public class BoardServiceV1 {
                 continue;
             }
 
-            if (player.getPhaseCallSize() == bettingSize) {
-                continue;
-            }
-
             if (maxCallSize < player.getPhaseCallSize()) {
                 maxCallSize = player.getPhaseCallSize();
             }
