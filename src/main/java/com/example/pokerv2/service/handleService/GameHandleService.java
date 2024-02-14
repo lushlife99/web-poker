@@ -131,7 +131,6 @@ public class GameHandleService {
     }
 
     public BoardDto startGame(Long boardId) {
-        boardServiceV1.dropDisconnectPlayers(boardId);
         BoardDto board = boardServiceV1.getBoard(boardId);
         if (board.getTotalPlayer() >= 2) {
             boardServiceV1.startGame(boardId);
@@ -178,6 +177,7 @@ public class GameHandleService {
             return;
         }
 
+        boardServiceV1.dropDisconnectPlayers(boardId);
         boardServiceV1.initBoard(boardId);
         List<PlayerDto> playerDtos = boardServiceV1.chargeMoney(boardId);
 

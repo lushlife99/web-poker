@@ -24,5 +24,5 @@ public enum PlayerStatus {
             }
         }
         throw new IllegalArgumentException("Invalid statusNum: " + statusNum);
-    }
+     }
 }

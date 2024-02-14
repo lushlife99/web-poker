@@ -80,6 +80,12 @@ public class BoardServiceV1 {
             throw new CustomException(ErrorCode.MAX_PLAYER_SIZE);
         }
 
+        for (Player player : board.getPlayers()) {
+            if(player.getUser().getUserId().equals(principal.getName())){
+                throw new CustomException(ErrorCode.AlREADY_PLAYING_BOARD);
+            }
+        }
+
         Player player = buyIn(board, user, requestBb);
         sitIn(board, player);
         boardRepository.save(board);
