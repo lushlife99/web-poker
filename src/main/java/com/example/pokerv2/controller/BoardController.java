@@ -62,10 +62,6 @@ public class BoardController {
         return boardServiceV1.getBoardList(blind);
     }
 
-    @MessageMapping("/errorTest")
-    public void test(){
-        throw new CustomException(ErrorCode.BAD_REQUEST);
-    }
 
     /**
      * startGame
