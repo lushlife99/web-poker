@@ -408,7 +408,6 @@ public class BoardServiceV1 {
         return boardDto;
     }
 
-
     private static BoardDto determineWinner(Board board) {
         List<Player> players = board.getPlayers();
         List<Integer> communityCards = new ArrayList<>(List.of(board.getCommunityCard1(), board.getCommunityCard2(), board.getCommunityCard3(), board.getCommunityCard4(), board.getCommunityCard5()));
