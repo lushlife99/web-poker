@@ -81,12 +81,13 @@ public class GameHandleService {
                     sendUpdateBoardToPlayers(board.getId(), MessageType.NEXT_PHASE_START);
                 } else {
                     endGame(board.getId());
+                    break;
                 }
             } else {
                 sendUpdateBoardToPlayers(board.getId(), MessageType.NEXT_ACTION);
             }
 
-            if (boardServiceV1.isGameEnd(board.getId()) || board.getPhaseStatus() == PhaseStatus.SHOWDOWN) {
+            if (boardServiceV1.isGameEnd(board.getId())) {
                 endGame(board.getId());
                 break;
             }
