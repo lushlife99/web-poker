@@ -1,10 +1,6 @@
 package com.example.pokerv2.dto;
 
-import com.example.pokerv2.enums.PhaseStatus;
-import com.example.pokerv2.enums.Position;
 import com.example.pokerv2.model.Action;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

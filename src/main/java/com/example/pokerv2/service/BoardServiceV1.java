@@ -390,7 +390,6 @@ public class BoardServiceV1 {
      */
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public BoardDto showDown(Long boardId) {
-        System.out.println("BoardServiceV1.showDown");
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
         board.setPhaseStatus(PhaseStatus.SHOWDOWN);

@@ -75,9 +75,9 @@ public class GameHandleService {
             if (board.getActionPos() == -1) {
                 hudService.addCountBeforePhaseChange(board.getId());
                 handHistoryService.savePhaseHistory(board.getId());
-                boardDto = boardServiceV1.nextPhase(board.getId());
-                hudService.addCountAfterPhaseChange(board.getId());
-                if (boardDto.getPhaseStatus() != PhaseStatus.SHOWDOWN.ordinal()) {
+                if (boardDto.getPhaseStatus() != PhaseStatus.RIVER.ordinal()) {
+                    boardDto = boardServiceV1.nextPhase(board.getId());
+                    hudService.addCountAfterPhaseChange(board.getId());
                     sendUpdateBoardToPlayers(board.getId(), MessageType.NEXT_PHASE_START);
                 } else {
                     endGame(board.getId());
