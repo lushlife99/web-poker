@@ -44,7 +44,6 @@ public class BoardController {
 
     @MessageMapping("/board/action/{option}")
     public void action(@RequestBody BoardDto boardDto, @DestinationVariable String option, Principal principal){
-        System.out.println(boardDto);
         gameHandleService.action(boardDto, option, principal.getName());
     }
 

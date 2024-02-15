@@ -107,7 +107,6 @@ public class HandHistoryService {
                 HandHistory handHistory = userHandHistory.getHandHistory();
                 if(handHistory.isFinish()) {
                     handHistoryList.add(new HandHistoryDto(handHistory));
-                    System.out.println(new HandHistoryDto(handHistory));
                 }
             }
         }

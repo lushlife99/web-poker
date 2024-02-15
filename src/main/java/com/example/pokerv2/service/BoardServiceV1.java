@@ -76,8 +76,6 @@ public class BoardServiceV1 {
         User user = userRepository.findByUserId(principal.getName()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
 
-        System.out.println(new BoardDto(board));
-
         if(board.getTotalPlayer() >= MAX_PLAYER) {
             throw new CustomException(ErrorCode.MAX_PLAYER_SIZE);
         }
@@ -267,16 +265,14 @@ public class BoardServiceV1 {
 
         for (Player player : players) {
             if(player.getMoney() <= board.getBlind() * 100) {
-                int chargeMoney = board.getBlind() * 100 - player.getMoney();
+                int money = board.getBlind() * 100 - player.getMoney();
                 User user = player.getUser();
-                if(user.getMoney() < chargeMoney) {
+                if(user.getMoney() < money) {
                     unChargePlayerList.add(new PlayerDto(player));
                     continue;
                 }
-
-                user.setMoney(user.getMoney() - chargeMoney);
-                player.setMoney(player.getMoney() + chargeMoney);
-
+                user.setMoney(user.getMoney() - money);
+                player.setMoney(player.getMoney() + money);
             }
         }
 
@@ -347,9 +343,6 @@ public class BoardServiceV1 {
         Player overBetPlayer = players.get(bettingPlayerIdx);
         overBetPlayer.setMoney(overBetPlayer.getMoney() + bettingSize - maxCallSize);
         overBetPlayer.setPhaseCallSize(maxCallSize);
-        System.out.println(overBetPlayer.getMoney());
-        System.out.println(bettingSize);
-        System.out.println(maxCallSize);
         boardRepository.save(board);
     }
 
@@ -394,6 +387,7 @@ public class BoardServiceV1 {
         List<Player> players = board.getPlayers();
         board.setPhaseStatus(PhaseStatus.SHOWDOWN);
         refundOverBet(board);
+        initPhase(boardId);
         BoardDto boardDto = determineWinner(board);
         PotDistributorUtils.calculate(boardDto);
 
@@ -404,7 +398,7 @@ public class BoardServiceV1 {
                 player.setMoney(player.getMoney() + gameResult.getEarnedMoney());
             }
         }
-        boardRepository.save(board);
+        playerRepository.saveAll(players);
         return boardDto;
     }
 
@@ -721,6 +715,19 @@ public class BoardServiceV1 {
             boardRepository.save(board);
         }
 
+    }
+
+    @Transactional
+    public void dropMoneyLessPlayers(Long boardId, List<PlayerDto> moneyLessPlayers) {
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+
+        for (PlayerDto moneyLessPlayer : moneyLessPlayers) {
+            Player player = playerRepository.findById(moneyLessPlayer.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+            User user = player.getUser();
+            user.setMoney(user.getMoney() + player.getMoney());
+        }
+
+        board.setTotalPlayer(board.getTotalPlayer() - moneyLessPlayers.size());
     }
 
     @Transactional

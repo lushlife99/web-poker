@@ -180,8 +180,9 @@ public class GameHandleService {
         }
 
         boardServiceV1.dropDisconnectPlayers(boardId);
-        boardServiceV1.initBoard(boardId);
         List<PlayerDto> playerDtos = boardServiceV1.chargeMoney(boardId);
+        boardServiceV1.dropMoneyLessPlayers(boardId, playerDtos);
+        boardServiceV1.initBoard(boardId);
 
         for (PlayerDto playerDto : playerDtos) {
             sendErrorToPlayer(boardId, playerDto.getUserId(), new CustomException(ErrorCode.NOT_ENOUGH_MONEY));
