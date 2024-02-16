@@ -24,7 +24,7 @@ public class UserController {
     }
 
     @GetMapping(value = "/image/{imagePath}", produces = MediaType.IMAGE_JPEG_VALUE)
-    public ResponseEntity<byte[]> getIdealImg(@PathVariable String imagePath) {
+    public ResponseEntity<byte[]> getImage(@PathVariable String imagePath) {
 
         byte[] img = userServiceV1.getUserImage(imagePath);
         return new ResponseEntity<>(img, HttpStatus.OK);
