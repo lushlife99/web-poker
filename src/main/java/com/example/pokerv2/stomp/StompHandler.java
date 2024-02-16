@@ -56,8 +56,7 @@ public class StompHandler implements ChannelInterceptor {
             final String disconnect_option = accessor.getFirstNativeHeader(DISCONNECT_OPTION);
             final String playerId = accessor.getFirstNativeHeader(PLAYER_ID);
 
-            System.out.println(disconnect_option);
-            System.out.println(playerId);
+            System.out.println(accessor.getMessageHeaders());
 
             if(accessor.getUser() != null && disconnect_option == null && playerId != null) {
                 playerLifeCycleService.setDisconnect(accessor.getUser());
