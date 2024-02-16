@@ -46,9 +46,7 @@ public class PlayerService {
                 } else if (player.getStatus() == PlayerStatus.ALL_IN) {
                     player.setStatus(PlayerStatus.DISCONNECT_ALL_IN);
                 }
-
             }
-
             playerRepository.deleteAll(exitList);
         }
     }

@@ -23,10 +23,10 @@ public class UserController {
         return userServiceV1.getMyProfile(principal);
     }
 
-    @GetMapping(value = "/image/{imagePath}", produces = MediaType.IMAGE_JPEG_VALUE)
-    public ResponseEntity<byte[]> getImage(@PathVariable String imagePath) {
+    @GetMapping(value = "/image/{userId}", produces = MediaType.IMAGE_JPEG_VALUE)
+    public ResponseEntity<byte[]> getImage(@PathVariable String userId) {
 
-        byte[] img = userServiceV1.getUserImage(imagePath);
+        byte[] img = userServiceV1.getUserImage(userId);
         return new ResponseEntity<>(img, HttpStatus.OK);
     }
 
