@@ -323,7 +323,10 @@ public class BoardServiceV1 {
         playerRepository.deleteAll(disConnectedPlayers);
     }
 
-    public void refundOverBet(Board board) {
+    @Transactional
+    public void refundOverBet(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+
         int bettingPlayerIdx = getPlayerIdxByPos(board, board.getBettingPos());
         int bettingSize = board.getBettingSize();
         int maxCallSize = -1;
