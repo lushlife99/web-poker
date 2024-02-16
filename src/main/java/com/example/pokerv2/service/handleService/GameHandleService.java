@@ -150,6 +150,9 @@ public class GameHandleService {
         int resultAnimationCount = 0;
         BoardDto boardDto;
 
+        boardServiceV1.refundOverBet(board);
+
+
         if (boardServiceV1.isShowDown(boardId)) {
             boardDto = boardServiceV1.showDown(boardId);
             sendUpdateBoardToPlayers(boardDto, MessageType.SHOW_DOWN);

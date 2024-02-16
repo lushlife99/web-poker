@@ -68,7 +68,7 @@ public class UserServiceV1 {
             if (imageResource.exists()) {
                 return Files.readAllBytes(path);
             } else {
-                throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+                return new byte[0];
             }
 
         } catch (IOException e) {

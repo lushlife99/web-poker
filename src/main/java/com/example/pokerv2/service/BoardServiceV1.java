@@ -386,7 +386,7 @@ public class BoardServiceV1 {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
         List<Player> players = board.getPlayers();
         board.setPhaseStatus(PhaseStatus.SHOWDOWN);
-        refundOverBet(board);
+//        refundOverBet(board);
         initPhase(boardId);
         BoardDto boardDto = determineWinner(board);
         PotDistributorUtils.calculate(boardDto);
