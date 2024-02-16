@@ -58,8 +58,8 @@ public class UserServiceV1 {
         return new UserDto(user);
     }
 
-    public byte[] getUserImage(String userId) {
-        User user = userRepository.findByUserId(userId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+    public byte[] getUserImage(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
 
         try {
             Path path = Paths.get(rootFilePath, user.getImagePath()).toAbsolutePath();
