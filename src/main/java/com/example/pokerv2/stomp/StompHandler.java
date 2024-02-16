@@ -27,8 +27,8 @@ public class StompHandler implements ChannelInterceptor {
     private static final String PASSWORD_HEADER = "password";
     private static final String DISCONNECT_OPTION = "disconnect_option";
     private static final String PLAYER_ID = "player_id";
-    private static final String exitDisconnectValue = "exit";
-    private static final String defaultDisconnectValue = "default";
+    private static final String exitValue = "exit";
+    private static final String disconnectValue = "disconnect";
 
     @Override
     public Message<?> preSend(final Message<?> message, final MessageChannel channel) throws AuthenticationException {
@@ -40,26 +40,21 @@ public class StompHandler implements ChannelInterceptor {
 
                 final UsernamePasswordAuthenticationToken user = webSocketAuthenticatorService.getAuthenticatedOrFail(username, password);
                 accessor.setUser(user);
+
                 playerLifeCycleService.setConnect(user);
             } else {
                 throw new MessageDeliveryException("UNAUTHORIZED");
             }
         }
 
-        if(StompCommand.SUBSCRIBE == accessor.getCommand()) {
-            Long playerId = Long.parseLong(accessor.getFirstNativeHeader(PLAYER_ID));
-            System.out.println(playerId);
-            accessor.setHeader(PLAYER_ID, playerId);
-        }
-
         else if (StompCommand.DISCONNECT == accessor.getCommand()) {
             final String disconnect_option = accessor.getFirstNativeHeader(DISCONNECT_OPTION);
-            final String playerId = accessor.getFirstNativeHeader(PLAYER_ID);
+            final Long playerId = Long.parseLong(accessor.getFirstNativeHeader(PLAYER_ID));
 
             System.out.println(accessor.getMessageHeaders());
 
-            if(accessor.getUser() != null && disconnect_option == null && playerId != null) {
-                playerLifeCycleService.setDisconnect(accessor.getUser());
+            if(accessor.getUser() != null && disconnect_option != null && disconnect_option.equals(disconnectValue) && playerId != null) {
+                playerLifeCycleService.setDisconnect(playerId);
             }
         }
         return message;
