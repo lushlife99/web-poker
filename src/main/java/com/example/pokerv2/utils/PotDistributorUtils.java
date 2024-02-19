@@ -52,7 +52,6 @@ public class PotDistributorUtils {
             if(boardDto.getPot() < boardDto.getTotalPlayer()) {
                 break;
             }
-
         }
     }
 

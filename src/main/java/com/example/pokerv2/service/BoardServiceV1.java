@@ -330,10 +330,12 @@ public class BoardServiceV1 {
         int bettingPlayerIdx = getPlayerIdxByPos(board, board.getBettingPos());
         int bettingSize = board.getBettingSize();
         int maxCallSize = -1;
+        int totalPot = board.getPot();
         List<Player> players = board.getPlayers();
 
         for (int i = 0; i < board.getTotalPlayer(); i++) {
             Player player = players.get(i);
+            totalPot += player.getPhaseCallSize();
             if (player.getPosition().getPosNum() == board.getBettingPos()) {
                 continue;
             }
@@ -341,6 +343,10 @@ public class BoardServiceV1 {
             if (maxCallSize < player.getPhaseCallSize()) {
                 maxCallSize = player.getPhaseCallSize();
             }
+        }
+
+        if(totalPot == board.getBlind() * 1.5) {
+            return;
         }
 
         Player overBetPlayer = players.get(bettingPlayerIdx);
