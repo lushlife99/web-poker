@@ -26,7 +26,9 @@ public class StompHandler implements ChannelInterceptor {
     private static final String USERNAME_HEADER = "userId";
     private static final String PASSWORD_HEADER = "password";
     private static final String DISCONNECT_OPTION = "disconnect_option";
-    private static final String disconnectValue = "exit";
+    private static final String PLAYER_ID = "player_id";
+    private static final String exitValue = "exit";
+    private static final String disconnectValue = "disconnect";
 
     @Override
     public Message<?> preSend(final Message<?> message, final MessageChannel channel) throws AuthenticationException {
@@ -38,15 +40,19 @@ public class StompHandler implements ChannelInterceptor {
 
                 final UsernamePasswordAuthenticationToken user = webSocketAuthenticatorService.getAuthenticatedOrFail(username, password);
                 accessor.setUser(user);
+
                 playerLifeCycleService.setConnect(user);
             } else {
                 throw new MessageDeliveryException("UNAUTHORIZED");
             }
         }
+
         else if (StompCommand.DISCONNECT == accessor.getCommand()) {
             final String disconnect_option = accessor.getFirstNativeHeader(DISCONNECT_OPTION);
-            if(accessor.getUser() != null && disconnect_option == null) {
-                playerLifeCycleService.setDisconnect(accessor.getUser());
+            final String playerId = accessor.getFirstNativeHeader(PLAYER_ID);
+
+            if(accessor.getUser() != null && disconnect_option != null && disconnect_option.equals(disconnectValue) && playerId != null) {
+                playerLifeCycleService.setDisconnect(Long.parseLong(playerId));
             }
         }
         return message;

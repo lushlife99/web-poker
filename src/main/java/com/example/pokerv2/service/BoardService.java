@@ -16,7 +16,6 @@ import com.example.pokerv2.utils.HandCalculatorUtils;
 import com.example.pokerv2.utils.PotDistributorUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
@@ -28,7 +27,7 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
-public class BoardServiceV1 {
+public class BoardService {
 
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
@@ -227,6 +226,8 @@ public class BoardServiceV1 {
         for (Player player : board.getPlayers()) {
             if (player.getStatus() == PlayerStatus.PLAY || player.getStatus() == PlayerStatus.DISCONNECT_PLAYED) {
                 actionableCount++;
+            } else if(player.getStatus() == PlayerStatus.ALL_IN && player.getPosition().getPosNum() == board.getBettingPos()) {
+                actionableCount++;
             }
         }
 
@@ -237,6 +238,24 @@ public class BoardServiceV1 {
         return false;
     }
 
+    @Transactional
+    public boolean isShowDown(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        int foldCount = 0;
+        List<Player> players = board.getPlayers();
+        for (Player player : players) {
+            if(player.getStatus().equals(PlayerStatus.FOLD) || player.getStatus().equals(PlayerStatus.DISCONNECT_FOLD)) {
+                foldCount++;
+            }
+        }
+
+        if(foldCount == board.getTotalPlayer() - 1) {
+            return false;
+        }
+
+        return true;
+    }
+
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public List<PlayerDto> chargeMoney(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
@@ -245,16 +264,14 @@ public class BoardServiceV1 {
 
         for (Player player : players) {
             if(player.getMoney() <= board.getBlind() * 100) {
-                int chargeMoney = board.getBlind() * 100 - player.getMoney();
+                int money = board.getBlind() * 100 - player.getMoney();
                 User user = player.getUser();
-                if(user.getMoney() < chargeMoney) {
+                if(user.getMoney() < money) {
                     unChargePlayerList.add(new PlayerDto(player));
                     continue;
                 }
-
-                user.setMoney(user.getMoney() - chargeMoney);
-                player.setMoney(player.getMoney() + chargeMoney);
-
+                user.setMoney(user.getMoney() - money);
+                player.setMoney(player.getMoney() + money);
             }
         }
 
@@ -305,25 +322,38 @@ public class BoardServiceV1 {
         playerRepository.deleteAll(disConnectedPlayers);
     }
 
-    public void refundOverBet(Board board) {
+    @Transactional
+    public void refundOverBet(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+
         int bettingPlayerIdx = getPlayerIdxByPos(board, board.getBettingPos());
         int bettingSize = board.getBettingSize();
-        int maxCallSize = -1;
+        int maxCallSize = 0;
+        int totalPot = board.getPot();
         List<Player> players = board.getPlayers();
 
+        for (int i = 0; i < board.getTotalPlayer(); i++) {
+            Player player = players.get(i);
+            totalPot += player.getPhaseCallSize();
+            if (player.getPosition().getPosNum() == board.getBettingPos()) {
+                continue;
+            }
 
-        for (int i = bettingPlayerIdx + 1; i < bettingPlayerIdx + 1 + board.getTotalPlayer(); i++) {
-            Player player = players.get(i % board.getTotalPlayer());
-            if (player.getPhaseCallSize() == bettingSize)
-                return;
-            else if (maxCallSize < player.getPhaseCallSize()) {
+            if (maxCallSize < player.getPhaseCallSize()) {
                 maxCallSize = player.getPhaseCallSize();
             }
         }
 
-        Player overBetPlayer = players.get(bettingPlayerIdx);
-        overBetPlayer.setMoney(overBetPlayer.getMoney() + bettingSize - maxCallSize);
-        overBetPlayer.setPhaseCallSize(maxCallSize);
+        if(board.getPhaseStatus().equals(PhaseStatus.PRE_FLOP) && maxCallSize == 0.5 * board.getBlind()) {
+            return;
+        }
+
+        if(maxCallSize != board.getBettingSize()) {
+            Player overBetPlayer = players.get(bettingPlayerIdx);
+            overBetPlayer.setMoney(overBetPlayer.getMoney() + bettingSize - maxCallSize);
+            overBetPlayer.setPhaseCallSize(maxCallSize);
+            boardRepository.save(board);
+        }
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
@@ -364,11 +394,21 @@ public class BoardServiceV1 {
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public BoardDto showDown(Long boardId) {
         Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+        List<Player> players = board.getPlayers();
         board.setPhaseStatus(PhaseStatus.SHOWDOWN);
-        refundOverBet(board);
+//        refundOverBet(board);
+        initPhase(boardId);
         BoardDto boardDto = determineWinner(board);
-        PotDistributorUtils.distribute(boardDto);
+        PotDistributorUtils.calculate(boardDto);
 
+        for (PlayerDto playerDto : boardDto.getPlayers()) {
+            GameResultDto gameResult = playerDto.getGameResult();
+            if(gameResult.isWinner()) {
+                Player player = players.get(getPlayerIdxByPos(board, playerDto.getPosition()));
+                player.setMoney(player.getMoney() + gameResult.getEarnedMoney());
+            }
+        }
+        playerRepository.saveAll(players);
         return boardDto;
     }
 
@@ -455,21 +495,6 @@ public class BoardServiceV1 {
         board.setBettingPos(betPos);
         board.setLastActionTime(LocalDateTime.now());
         return boardRepository.save(board);
-    }
-
-    private void saveAction(BoardDto boardDto) {
-        List<PlayerDto> players = boardDto.getPlayers();
-        PlayerDto actPlayer = players.get(boardDto.getActionPos());
-        if (actPlayer.getStatus() == PlayerStatus.FOLD.ordinal()) {
-            //fold
-
-        } else if (actPlayer.getStatus() == PlayerStatus.ALL_IN.ordinal()) {
-            //all-in
-        } else if (actPlayer.getStatus() == PlayerStatus.PLAY.ordinal() && boardDto.getActionPos() == boardDto.getBettingPos()) {
-            //bet
-        } else if (actPlayer.getStatus() == PlayerStatus.PLAY.ordinal() && actPlayer.getPhaseCallSize() == boardDto.getBettingSize()) {
-            //call
-        } else throw new CustomException(ErrorCode.BAD_REQUEST);
     }
 
 
@@ -700,6 +725,19 @@ public class BoardServiceV1 {
             boardRepository.save(board);
         }
 
+    }
+
+    @Transactional
+    public void dropMoneyLessPlayers(Long boardId, List<PlayerDto> moneyLessPlayers) {
+        Board board = boardRepository.findById(boardId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+
+        for (PlayerDto moneyLessPlayer : moneyLessPlayers) {
+            Player player = playerRepository.findById(moneyLessPlayer.getId()).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+            User user = player.getUser();
+            user.setMoney(user.getMoney() + player.getMoney());
+        }
+
+        board.setTotalPlayer(board.getTotalPlayer() - moneyLessPlayers.size());
     }
 
     @Transactional

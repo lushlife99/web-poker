@@ -27,7 +27,8 @@ class PotDistributorUtilsTest {
     @BeforeEach
     void init() {
 
-        Board board = Board.builder().blind(1000).phaseStatus(PhaseStatus.SHOWDOWN).id(1L).totalPlayer(6).players(new ArrayList<>()).build();
+        Board board = Board.builder().blind(1000).phaseStatus(PhaseStatus.SHOWDOWN).id(1L).totalPlayer(6).
+                gameSeq(1L).players(new ArrayList<>()).build();
 
         this.boardDto = new BoardDto(board);
 
@@ -74,12 +75,12 @@ class PotDistributorUtilsTest {
         boardDto.setPot(totalCallSize * 6);
 
         //when
-        PotDistributorUtils.distribute(boardDto);
+        PotDistributorUtils.calculate(boardDto);
 
         //then
         PlayerDto winPlayer = boardDto.getPlayers().get(0);
         assertThat(winPlayer.getGameResult().isWinner()).isTrue();
-        assertThat(winPlayer.getMoney()).isEqualTo(totalCallSize * 5);
+        assertThat(winPlayer.getGameResult().getEarnedMoney()).isEqualTo(totalCallSize * 6);
     }
 
     @Test
@@ -121,12 +122,12 @@ class PotDistributorUtilsTest {
         boardDto.setPot(totalCallSize * 6);
 
         //when
-        PotDistributorUtils.distribute(boardDto);
+        PotDistributorUtils.calculate(boardDto);
 
         //then
         PlayerDto winPlayer = boardDto.getPlayers().get(0);
         assertThat(winPlayer.getGameResult().isWinner()).isTrue();
-        assertThat(winPlayer.getMoney()).isEqualTo(totalCallSize * 5);
+        assertThat(winPlayer.getGameResult().getEarnedMoney()).isEqualTo(totalCallSize * 6);
     }
 
     @Test
@@ -149,37 +150,37 @@ class PotDistributorUtilsTest {
         totalCallSizeList.set(2, standardCallSize * 3);
         totalCallSizeList.set(3, standardCallSize * 4);
         totalCallSizeList.set(4, standardCallSize * 5);
-        totalCallSizeList.set(5, standardCallSize * 5);
+        totalCallSizeList.set(5, standardCallSize * 6);
 
-        boardDto.setPot(standardCallSize * 20);
+        boardDto.setPot(standardCallSize * 28);
 
         //when
-        PotDistributorUtils.distribute(boardDto);
+        PotDistributorUtils.calculate(boardDto);
 
         //then
         firstStrongestPlayer = boardDto.getPlayers().get(0);
         assertThat(firstStrongestPlayer.getGameResult().isWinner()).isTrue();
-        assertThat(firstStrongestPlayer.getMoney()).isEqualTo(standardCallSize * 5);
+        assertThat(firstStrongestPlayer.getGameResult().getEarnedMoney()).isEqualTo(standardCallSize * 6);
 
         secondStrongestPlayer = boardDto.getPlayers().get(1);
         assertThat(secondStrongestPlayer.getGameResult().isWinner()).isTrue();
-        assertThat(secondStrongestPlayer.getMoney()).isEqualTo(standardCallSize * 4);
+        assertThat(secondStrongestPlayer.getGameResult().getEarnedMoney()).isEqualTo(standardCallSize * 5);
 
         thirdStrongestPlayer = boardDto.getPlayers().get(2);
         assertThat(thirdStrongestPlayer.getGameResult().isWinner()).isTrue();
-        assertThat(thirdStrongestPlayer.getMoney()).isEqualTo(standardCallSize * 3);
+        assertThat(thirdStrongestPlayer.getGameResult().getEarnedMoney()).isEqualTo(standardCallSize * 4);
 
         fourthStrongestPlayer = boardDto.getPlayers().get(3);
         assertThat(fourthStrongestPlayer.getGameResult().isWinner()).isTrue();
-        assertThat(fourthStrongestPlayer.getMoney()).isEqualTo(standardCallSize * 2);
+        assertThat(fourthStrongestPlayer.getGameResult().getEarnedMoney()).isEqualTo(standardCallSize * 3);
 
         fifthStrongestPlayer = boardDto.getPlayers().get(4);
         assertThat(fifthStrongestPlayer.getGameResult().isWinner()).isTrue();
-        assertThat(fifthStrongestPlayer.getMoney()).isEqualTo(standardCallSize * 1);
+        assertThat(fifthStrongestPlayer.getGameResult().getEarnedMoney()).isEqualTo(standardCallSize * 2);
 
         sixthStrongestPlayer = boardDto.getPlayers().get(5);
         assertThat(sixthStrongestPlayer.getGameResult().isWinner()).isFalse();
-        assertThat(sixthStrongestPlayer.getMoney()).isEqualTo(0);
+        assertThat(sixthStrongestPlayer.getGameResult().getEarnedMoney()).isEqualTo(0);
     }
 
     @Test
@@ -221,7 +222,7 @@ class PotDistributorUtilsTest {
         boardDto.setPot(callSizeStandard * 33);
 
         //when
-        PotDistributorUtils.distribute(boardDto);
+        PotDistributorUtils.calculate(boardDto);
         for (PlayerDto player : boardDto.getPlayers()) {
             System.out.println(player.getGameResult());
         }

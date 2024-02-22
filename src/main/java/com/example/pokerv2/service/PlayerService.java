@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,28 +27,25 @@ public class PlayerService {
     private final PlayerRepository playerRepository;
 
     @Transactional
-    public void setDisconnect(Principal principal) {
-        Optional<User> disconnectedUser = userRepository.findByUserId(principal.getName());
-        if (disconnectedUser.isPresent()) {
-            User user = disconnectedUser.get();
-            List<Player> playerList = user.getPlayerList();
-            List<Player> exitList = new ArrayList<>();
-            for (Player player : playerList) {
-                Board board = player.getBoard();
-                if(board.getTotalPlayer() == 1) {
-                    exitList.add(player);
-                }
-                if (player.getStatus() == PlayerStatus.FOLD) {
-                    player.setStatus(PlayerStatus.DISCONNECT_FOLD);
-                } else if (player.getStatus() == PlayerStatus.PLAY) {
-                    player.setStatus(PlayerStatus.DISCONNECT_PLAYED);
-                } else if (player.getStatus() == PlayerStatus.ALL_IN) {
-                    player.setStatus(PlayerStatus.DISCONNECT_ALL_IN);
-                }
+    public void setDisconnect(Long playerId) {
+        Optional<Player> disconnectPlayer = playerRepository.findById(playerId);
+        if (disconnectPlayer.isPresent()) {
+            Player player = disconnectPlayer.get();
 
+            Board board = player.getBoard();
+            if (board.getTotalPlayer() == 1) {
+                playerRepository.delete(player);
+                return;
             }
 
-            playerRepository.deleteAll(exitList);
+            if (player.getStatus() == PlayerStatus.FOLD) {
+                player.setStatus(PlayerStatus.DISCONNECT_FOLD);
+            } else if (player.getStatus() == PlayerStatus.PLAY) {
+                player.setStatus(PlayerStatus.DISCONNECT_PLAYED);
+            } else if (player.getStatus() == PlayerStatus.ALL_IN) {
+                player.setStatus(PlayerStatus.DISCONNECT_ALL_IN);
+            }
+
         }
     }
 
@@ -60,7 +56,7 @@ public class PlayerService {
 
         for (Player player : playerList) {
             Board board = player.getBoard();
-            if(board.getPhaseStatus().ordinal() >= PhaseStatus.PRE_FLOP.ordinal() && board.getPhaseStatus().ordinal() <= PhaseStatus.RIVER.ordinal()) {
+            if (board.getPhaseStatus().ordinal() >= PhaseStatus.PRE_FLOP.ordinal() && board.getPhaseStatus().ordinal() <= PhaseStatus.RIVER.ordinal()) {
                 if (player.getStatus() == PlayerStatus.DISCONNECT_ALL_IN) {
                     player.setStatus(PlayerStatus.ALL_IN);
                 } else if (player.getStatus() == PlayerStatus.DISCONNECT_PLAYED) {

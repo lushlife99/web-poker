@@ -31,7 +31,7 @@ public class HandHistoryDto {
     private List<UserDto> userList = new ArrayList<>();
     private List<Integer> posList = new ArrayList<>();
     private List<Integer> cardList = new ArrayList<>();
-
+    private List<Long> showDownUserIdList = new ArrayList<>();
     public HandHistoryDto(HandHistory handHistory) {
         this.id = handHistory.getId();
         this.actionList = new ArrayList<>();
@@ -53,6 +53,7 @@ public class HandHistoryDto {
             userList.add(new UserDto(userHandHistory.getUser()));
         }
         this.posList = handHistory.getPosList();
+        this.showDownUserIdList = handHistory.getShowDownUserIdList();
         cardList = handHistory.getCardList();
     }
 

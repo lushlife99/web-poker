@@ -13,10 +13,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,7 +25,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class UserServiceV1 {
+public class UserService {
 
     private final UserRepository userRepository;
     private final HudRepository hudRepository;
@@ -58,15 +56,17 @@ public class UserServiceV1 {
         return new UserDto(user);
     }
 
-    public byte[] getUserImage(String imagePath) {
+    public byte[] getUserImage(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+
         try {
-            Path path = Paths.get(rootFilePath, imagePath).toAbsolutePath();
+            Path path = Paths.get(rootFilePath, user.getImagePath()).toAbsolutePath();
             Resource imageResource = new UrlResource(path.toUri());
 
             if (imageResource.exists()) {
                 return Files.readAllBytes(path);
             } else {
-                throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+                return new byte[0];
             }
 
         } catch (IOException e) {
