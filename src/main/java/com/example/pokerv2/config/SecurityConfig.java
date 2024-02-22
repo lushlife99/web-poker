@@ -38,8 +38,8 @@ public class SecurityConfig  {
                 .csrf((csrfConfig) -> csrfConfig.disable())
                 .authorizeHttpRequests((authorizeRequests) ->
                                 authorizeRequests
-                                        .requestMatchers("/join", "/login", "/test/**").permitAll()
-                                        .anyRequest().authenticated()
+                                        .requestMatchers("/join", "/login", "/test/**", "/v3/**", "/swagger-ui/**").permitAll()
+                                        .requestMatchers("/api/**").authenticated()
                 )
                 .formLogin((formLogin) ->
                         formLogin
@@ -55,10 +55,6 @@ public class SecurityConfig  {
 
         return http.build();
     }
-
-//    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-//        auth.userDetailsService(userAuthenticationService).passwordEncoder(encodePwd());
-//    }
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {

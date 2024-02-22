@@ -1,17 +1,13 @@
 package com.example.pokerv2.controller;
 
 import com.example.pokerv2.dto.BoardDto;
-import com.example.pokerv2.enums.PhaseStatus;
-import com.example.pokerv2.error.CustomException;
-import com.example.pokerv2.error.ErrorCode;
 import com.example.pokerv2.service.BoardServiceV1;
 import com.example.pokerv2.service.handleService.GameHandleService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
-import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +17,7 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 @RestController
+@Tag(name = "Board")
 @RequestMapping("/api/board")
 public class BoardController {
 
@@ -28,26 +25,31 @@ public class BoardController {
     private final GameHandleService gameHandleService;
 
     @GetMapping("/context")
+    @Operation(summary = "게임 문맥데이터 조회", description = "게임 플레이 중에 연결이 끊겼을 경우, 재 로그인 시 문맥데이터 반환")
     public List<BoardDto> getContext(Principal principal) {
         return boardServiceV1.getContext(principal);
     }
 
     @PostMapping("/joinGame")
+    @Operation(summary = "게임 입장", description = "빠른 게임 입장")
     public BoardDto joinGame(@RequestParam int blind, @RequestParam int bb, Principal principal) {
         return gameHandleService.joinRandomBoard(blind, bb, principal);
     }
 
     @PostMapping("/joinGame/{boardId}")
+    @Operation(summary = "게임 입장", description = "선택한 게임 입장")
     public BoardDto joinGame(@RequestParam Long boardId, @RequestParam int bb, Principal principal) {
         return gameHandleService.join(boardId, bb, principal);
     }
 
-    @MessageMapping("/board/action/{option}")
-    public void action(@RequestBody BoardDto boardDto, @DestinationVariable String option, Principal principal){
-        gameHandleService.action(boardDto, option, principal.getName());
+    @GetMapping("/search/{blind}")
+    @Operation(summary = "Blind로 나눠진 게임 리스트 조회")
+    public List<BoardDto> getBoardList(@PathVariable int blind) {
+        return boardServiceV1.getBoardList(blind);
     }
 
     @GetMapping("/{boardId}")
+    @Operation(summary = "단건 게임 조회")
     public BoardDto get(@PathVariable Long boardId, Principal principal) {
         return boardServiceV1.get(boardId, principal);
     }
@@ -57,27 +59,10 @@ public class BoardController {
         gameHandleService.exitPlayer(board, principal.getName());
     }
 
-    @GetMapping("/search/{blind}")
-    public List<BoardDto> getBoardList(@PathVariable int blind) {
-        return boardServiceV1.getBoardList(blind);
+    @MessageMapping("/board/action/{option}")
+    public void action(@RequestBody BoardDto boardDto, @DestinationVariable String option, Principal principal){
+        gameHandleService.action(boardDto, option, principal.getName());
     }
 
-
-    /**
-     * startGame
-     * endGame
-     * 지금은 컨트롤러의 동작으로 게임을 실행하지만,
-     * 나중에 게임로직이 다 완성되면 게임이 끝났을 때 알아서 재시작하게 만들거임.
-     * 그렇게 되면 이 컨트롤러도 삭제.
-     *
-     * @param boardId
-     * @return
-     */
-
-    @PostMapping("/start/{boardId}")
-    public ResponseEntity startGame(@PathVariable Long boardId) {
-        gameHandleService.startGame(boardId);
-        return new ResponseEntity(HttpStatus.OK);
-    }
 
 }
