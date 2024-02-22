@@ -30,8 +30,7 @@ public class UserController {
     @GetMapping(value = "/image/{userId}", produces = MediaType.IMAGE_JPEG_VALUE)
     @Operation(summary = "이미지 조회")
     public ResponseEntity<byte[]> getImage(@PathVariable Long userId) {
-        byte[] img = userServiceV1.getUserImage(userId);
-        return new ResponseEntity<>(img, HttpStatus.OK);
+        return new ResponseEntity<>(userServiceV1.getUserImage(userId), HttpStatus.OK);
     }
     
     @PostMapping("/image")
