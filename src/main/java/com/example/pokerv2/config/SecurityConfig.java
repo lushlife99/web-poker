@@ -38,7 +38,7 @@ public class SecurityConfig  {
                 .csrf((csrfConfig) -> csrfConfig.disable())
                 .authorizeHttpRequests((authorizeRequests) ->
                                 authorizeRequests
-                                        .requestMatchers("/join", "/login", "/test/**", "/v3/**", "/swagger-ui/**").permitAll()
+                                        .requestMatchers("/ws", "/join", "/login", "/test/**", "/v3/**", "/swagger-ui/**").permitAll()
                                         .requestMatchers("/api/**").authenticated()
                 )
                 .formLogin((formLogin) ->
@@ -70,6 +70,5 @@ public class SecurityConfig  {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
-
 
 }

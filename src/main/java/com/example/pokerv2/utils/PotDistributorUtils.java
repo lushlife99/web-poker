@@ -58,7 +58,7 @@ public class PotDistributorUtils {
     private static void distributeOnePlayer(BoardDto boardDto, int winPlayerIdx) {
         List<PlayerDto> players = boardDto.getPlayers();
         PlayerDto winPlayer = players.get(winPlayerIdx);
-        List<Integer> totalCallSize = boardDto.getTotalCallSize();
+        List<Integer> totalCallSize = new ArrayList<>(boardDto.getTotalCallSize());
         int wpTotalCallSize = totalCallSize.get(winPlayerIdx);
         GameResultDto gameResult = winPlayer.getGameResult();
 
@@ -82,6 +82,8 @@ public class PotDistributorUtils {
         if (winPlayer.getGameResult().getEarnedMoney() != 0){
             winPlayer.getGameResult().setWinner(true);
         }
+
+        boardDto.setTotalCallSize(totalCallSize);
     }
 
     private static void distributeDrawPlayers(BoardDto boardDto, int firstPlayerIdx, long handValue) {
@@ -89,7 +91,7 @@ public class PotDistributorUtils {
         List<Integer> winPlayerTotalCallSize = new ArrayList<>();
 
         List<PlayerDto> players = boardDto.getPlayers();
-        List<Integer> totalCallSize = boardDto.getTotalCallSize();
+        List<Integer> totalCallSize = new ArrayList<>(boardDto.getTotalCallSize());
 
         for(int i = firstPlayerIdx; i < players.size(); i++){
             PlayerDto playerDto = players.get(i);
@@ -145,5 +147,7 @@ public class PotDistributorUtils {
                 wpGameResult.setWinner(true);
             }
         }
+
+        boardDto.setTotalCallSize(totalCallSize);
     }
 }
