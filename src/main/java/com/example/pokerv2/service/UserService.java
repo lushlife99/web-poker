@@ -25,7 +25,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class UserServiceV1 {
+public class UserService {
 
     private final UserRepository userRepository;
     private final HudRepository hudRepository;

@@ -16,7 +16,6 @@ import com.example.pokerv2.utils.HandCalculatorUtils;
 import com.example.pokerv2.utils.PotDistributorUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
@@ -28,7 +27,7 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
-public class BoardServiceV1 {
+public class BoardService {
 
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
@@ -329,7 +328,7 @@ public class BoardServiceV1 {
 
         int bettingPlayerIdx = getPlayerIdxByPos(board, board.getBettingPos());
         int bettingSize = board.getBettingSize();
-        int maxCallSize = -1;
+        int maxCallSize = 0;
         int totalPot = board.getPot();
         List<Player> players = board.getPlayers();
 
@@ -345,14 +344,16 @@ public class BoardServiceV1 {
             }
         }
 
-        if(totalPot == board.getBlind() * 1.5) {
+        if(board.getPhaseStatus().equals(PhaseStatus.PRE_FLOP) && maxCallSize == 0.5 * board.getBlind()) {
             return;
         }
 
-        Player overBetPlayer = players.get(bettingPlayerIdx);
-        overBetPlayer.setMoney(overBetPlayer.getMoney() + bettingSize - maxCallSize);
-        overBetPlayer.setPhaseCallSize(maxCallSize);
-        boardRepository.save(board);
+        if(maxCallSize != board.getBettingSize()) {
+            Player overBetPlayer = players.get(bettingPlayerIdx);
+            overBetPlayer.setMoney(overBetPlayer.getMoney() + bettingSize - maxCallSize);
+            overBetPlayer.setPhaseCallSize(maxCallSize);
+            boardRepository.save(board);
+        }
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)

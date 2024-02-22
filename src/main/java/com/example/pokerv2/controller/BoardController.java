@@ -1,7 +1,7 @@
 package com.example.pokerv2.controller;
 
 import com.example.pokerv2.dto.BoardDto;
-import com.example.pokerv2.service.BoardServiceV1;
+import com.example.pokerv2.service.BoardService;
 import com.example.pokerv2.service.handleService.GameHandleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,13 +21,13 @@ import java.util.List;
 @RequestMapping("/api/board")
 public class BoardController {
 
-    private final BoardServiceV1 boardServiceV1;
+    private final BoardService boardService;
     private final GameHandleService gameHandleService;
 
     @GetMapping("/context")
     @Operation(summary = "게임 문맥데이터 조회", description = "게임 플레이 중에 연결이 끊겼을 경우, 재 로그인 시 문맥데이터 반환")
     public List<BoardDto> getContext(Principal principal) {
-        return boardServiceV1.getContext(principal);
+        return boardService.getContext(principal);
     }
 
     @PostMapping("/joinGame")
@@ -45,13 +45,13 @@ public class BoardController {
     @GetMapping("/search/{blind}")
     @Operation(summary = "Blind로 나눠진 게임 리스트 조회")
     public List<BoardDto> getBoardList(@PathVariable int blind) {
-        return boardServiceV1.getBoardList(blind);
+        return boardService.getBoardList(blind);
     }
 
     @GetMapping("/{boardId}")
     @Operation(summary = "단건 게임 조회")
     public BoardDto get(@PathVariable Long boardId, Principal principal) {
-        return boardServiceV1.get(boardId, principal);
+        return boardService.get(boardId, principal);
     }
 
     @MessageMapping("/board/exit")

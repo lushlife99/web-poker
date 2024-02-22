@@ -1,7 +1,7 @@
 package com.example.pokerv2.controller;
 
 import com.example.pokerv2.dto.UserDto;
-import com.example.pokerv2.service.UserServiceV1;
+import com.example.pokerv2.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -19,24 +19,24 @@ import java.security.Principal;
 @Tag(name = "User")
 public class UserController {
 
-    private final UserServiceV1 userServiceV1;
+    private final UserService userService;
 
     @GetMapping("/profile")
     @Operation(summary = "자기 정보 조회", description = "자기 프로필 조회")
     public UserDto getUserProfile(Principal principal) {
-        return userServiceV1.getMyProfile(principal);
+        return userService.getMyProfile(principal);
     }
 
     @GetMapping(value = "/image/{userId}", produces = MediaType.IMAGE_JPEG_VALUE)
     @Operation(summary = "이미지 조회")
     public ResponseEntity<byte[]> getImage(@PathVariable Long userId) {
-        return new ResponseEntity<>(userServiceV1.getUserImage(userId), HttpStatus.OK);
+        return new ResponseEntity<>(userService.getUserImage(userId), HttpStatus.OK);
     }
     
     @PostMapping("/image")
     @Operation(summary = "이미지 등록, 변경")
     public UserDto updateImage(@RequestParam MultipartFile file, Principal principal) {
-        return userServiceV1.updateUserImage(file, principal);
+        return userService.updateUserImage(file, principal);
     }
 
 }

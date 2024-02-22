@@ -1,7 +1,7 @@
 package com.example.pokerv2.controller;
 
 import com.example.pokerv2.model.User;
-import com.example.pokerv2.service.UserServiceV1;
+import com.example.pokerv2.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Auth")
 public class AuthController {
 
-    private final UserServiceV1 userService;
+    private final UserService userService;
 
     @PostMapping("/join")
     @Operation(summary = "회원가입", description = "id, name, password로 회원가입 한다.")
