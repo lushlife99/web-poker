@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 @Slf4j
 @Component
@@ -28,11 +30,6 @@ public class HandCalculatorUtils {
      * <p>
      * 핸드의 세기를 계산해주는 유틸클래스.
      * 계산한 핸드의 세기와, 족보를 이루는 카드리스트들을 GameResultDto에 담아준다.
-     *
-     * <p>
-     *
-     * <p>
-     * 함수가 너무 긺. 나중에 리팩토링 하기.
      */
 
     private HandCalculatorUtils() {
@@ -41,47 +38,39 @@ public class HandCalculatorUtils {
     public static GameResultDto calculateValue(List<Integer> cards) {
         List<Integer> jokBoList = new ArrayList<>();
         cards.sort(CardUtils.rankComparator());
-        long handValue;
 
-        handValue = evaluateRoyalStraightFlush(cards, jokBoList);
-        if (handValue == -1L) {
-            jokBoList.clear();
-            handValue = evaluateStraightFlush(cards, jokBoList);
-            if (handValue == -1L) {
-                jokBoList.clear();
-                handValue = evaluateFourOfAKind(cards, jokBoList);
-                if (handValue == -1L) {
-                    jokBoList.clear();
-                    handValue = evaluateFullHouse(cards, jokBoList);
-                    if (handValue == -1L) {
-                        jokBoList.clear();
-                        handValue = evaluateFlush(cards, jokBoList);
-                        if (handValue == -1L) {
-                            jokBoList.clear();
-                            handValue = evaluateStraight(cards, jokBoList);
-                            if (handValue == -1L) {
-                                jokBoList.clear();
-                                handValue = evaluateThreeOfAKind(cards, jokBoList);
-                                if (handValue == -1L) {
-                                    jokBoList.clear();
-                                    handValue = evaluateTwoPair(cards, jokBoList);
-                                    if (handValue == -1L) {
-                                        jokBoList.clear();
-                                        handValue = evaluateOnePair(cards, jokBoList);
-                                        if (handValue == -1L) {
-                                            jokBoList.clear();
-                                            handValue = evaluateHighCard(cards, jokBoList);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+        long handValue = evaluateHand(cards, jokBoList,
+                HandCalculatorUtils::evaluateRoyalStraightFlush,
+                HandCalculatorUtils::evaluateStraightFlush,
+                HandCalculatorUtils::evaluateFourOfAKind,
+                HandCalculatorUtils::evaluateFullHouse,
+                HandCalculatorUtils::evaluateFlush,
+                HandCalculatorUtils::evaluateStraight,
+                HandCalculatorUtils::evaluateThreeOfAKind,
+                HandCalculatorUtils::evaluateTwoPair,
+                HandCalculatorUtils::evaluateOnePair,
+                HandCalculatorUtils::evaluateHighCard
+        );
+
+        return GameResultDto.builder()
+                .handValue(handValue)
+                .jokBo(jokBoList)
+                .handContext(getHandContextByValue(handValue))
+                .build();
+    }
+
+    @SafeVarargs
+    private static long evaluateHand(List<Integer> cards, List<Integer> jokBoList,
+                                     BiFunction<List<Integer>, List<Integer>, Long>... evaluators) {
+        for (BiFunction<List<Integer>, List<Integer>, Long> evaluator : evaluators) {
+            long handValue = evaluator.apply(cards, jokBoList);
+            if (handValue != -1L) {
+                return handValue;
             }
+            jokBoList.clear();
         }
 
-        return GameResultDto.builder().handValue(handValue).jokBo(jokBoList).handContext(getHandContextByValue(handValue)).build();
+        return -1L;
     }
 
 
@@ -488,7 +477,7 @@ public class HandCalculatorUtils {
      * @param jokBo 만약 조건이 만족할 경우 족보를 이루는 5개의 카드를 담아줌.
      * @return 스트레이트 플러시의 밸류. (스티플의 하이카드)
      */
-    private static long evaluateStraightFlush(List<Integer> cards, List<Integer> jokBo) {
+    public static long evaluateStraightFlush(List<Integer> cards, List<Integer> jokBo) {
         cards.sort(Comparator.reverseOrder());
 
         int value;
