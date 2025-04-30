@@ -1,4 +1,4 @@
-package com.example.pokerv2.service.handleService;
+package com.example.pokerv2.service.game.handle;
 
 import com.example.pokerv2.dto.*;
 import com.example.pokerv2.enums.MessageType;
@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
 import java.util.List;
@@ -22,6 +23,7 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class GameHandleService {
 
     private final BoardService boardService;
@@ -35,6 +37,7 @@ public class GameHandleService {
 
     private final static int ACTION_TIME = 10;
     private final static int RESULT_ANIMATION_TIME = 5;
+    private final static int MIN_PLAYER_COUNT = 2;
 
     public BoardDto joinRandomBoard(int blind, int requestBb, Principal principal) {
 
@@ -132,7 +135,7 @@ public class GameHandleService {
 
     public BoardDto startGame(Long boardId) {
         BoardDto board = boardService.getBoard(boardId);
-        if (board.getTotalPlayer() >= 2) {
+        if (board.getTotalPlayer() >= MIN_PLAYER_COUNT) {
             boardService.startGame(boardId);
             sendUpdateBoardToPlayers(boardId, MessageType.GAME_START);
             handHistoryService.createHandHistory(boardId);

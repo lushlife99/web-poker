@@ -2,7 +2,7 @@ package com.example.pokerv2.controller;
 
 import com.example.pokerv2.dto.BoardDto;
 import com.example.pokerv2.service.BoardService;
-import com.example.pokerv2.service.handleService.GameHandleService;
+import com.example.pokerv2.service.game.handle.GameHandleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
