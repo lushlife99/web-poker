@@ -2,7 +2,7 @@ package com.example.pokerv2.controller;
 
 import com.example.pokerv2.dto.BoardDto;
 import com.example.pokerv2.service.BoardService;
-import com.example.pokerv2.service.game.handle.GameHandleService;
+import com.example.pokerv2.handler.game.GameHandler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ import java.util.List;
 public class BoardController {
 
     private final BoardService boardService;
-    private final GameHandleService gameHandleService;
+    private final GameHandler gameHandler;
 
     @GetMapping("/context")
     @Operation(summary = "게임 문맥데이터 조회", description = "게임 플레이 중에 연결이 끊겼을 경우, 재 로그인 시 문맥데이터 반환")
@@ -33,13 +33,13 @@ public class BoardController {
     @PostMapping("/joinGame")
     @Operation(summary = "게임 입장", description = "빠른 게임 입장")
     public BoardDto joinGame(@RequestParam int blind, @RequestParam int bb, Principal principal) {
-        return gameHandleService.joinRandomBoard(blind, bb, principal);
+        return gameHandler.joinRandomBoard(blind, bb, principal);
     }
 
     @PostMapping("/joinGame/{boardId}")
     @Operation(summary = "게임 입장", description = "선택한 게임 입장")
     public BoardDto joinGame(@RequestParam Long boardId, @RequestParam int bb, Principal principal) {
-        return gameHandleService.join(boardId, bb, principal);
+        return gameHandler.join(boardId, bb, principal);
     }
 
     @GetMapping("/search/{blind}")
@@ -56,12 +56,12 @@ public class BoardController {
 
     @MessageMapping("/board/exit")
     public void exitGame(@RequestBody BoardDto board, Principal principal) {
-        gameHandleService.exitPlayer(board, principal.getName());
+        gameHandler.exitPlayer(board, principal.getName());
     }
 
     @MessageMapping("/board/action/{option}")
     public void action(@RequestBody BoardDto boardDto, @DestinationVariable String option, Principal principal){
-        gameHandleService.action(boardDto, option, principal.getName());
+        gameHandler.action(boardDto, option, principal.getName());
     }
 
 

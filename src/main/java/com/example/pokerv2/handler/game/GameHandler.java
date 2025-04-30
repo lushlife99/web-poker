@@ -1,4 +1,4 @@
-package com.example.pokerv2.service.game.handle;
+package com.example.pokerv2.handler.game;
 
 import com.example.pokerv2.dto.*;
 import com.example.pokerv2.enums.MessageType;
@@ -24,7 +24,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class GameHandleService {
+public class GameHandler {
 
     private final BoardService boardService;
     private final ActionService actionService;
