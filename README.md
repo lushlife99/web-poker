@@ -47,48 +47,6 @@
   </tr>
 </table>
 
-## 🛠️ 기술 스택
-
-<table>
-  <tr>
-    <th width="200">영역</th>
-    <th>기술</th>
-  </tr>
-  <tr>
-    <td><b>백엔드</b></td>
-    <td>
-      <img src="https://img.shields.io/badge/Spring_Boot-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" alt="Spring Boot">
-      <img src="https://img.shields.io/badge/Spring_Security-6DB33F?style=for-the-badge&logo=docker&logoColor=white" alt="Spring Security">
-    </td>
-  </tr>
-  <tr>
-    <td><b>DB, ORM</b></td>
-    <td>
-      <img src="https://img.shields.io/badge/JPA-6DB33F?style=for-the-badge&logo=spring&logoColor=white" alt="Spring Data JPA">
-      <img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL">
-    </td>
-  </tr>
-  <tr>
-    <td><b>실시간 통신</b></td>
-    <td>
-      <img src="https://img.shields.io/badge/STOMP-010101?style=for-the-badge" alt="STOMP" />
-      <img src="https://img.shields.io/badge/WebSocket-010101?style=for-the-badge" alt="WebSocket" />
-    </td>
-  </tr>
-  <tr>
-    <td><b>인증</b></td>
-    <td>
-      <img src="https://img.shields.io/badge/JWT-000000?style=flat-square&logo=json-web-tokens&logoColor=white" alt="JWT" />
-    </td>
-  </tr>
-  <tr>
-    <td><b>테스트</b></td>
-    <td>
-      <img src="https://img.shields.io/badge/JUnit-25A162?style=for-the-badge&logo=junit5&logoColor=white" alt="Junit" />
-    </td>
-  </tr>
-</table>
-
 ## 🚀 주요 기능
 
 ### 1. 실시간 멀티플레이어 게임 로직 구현 (최대 6명 동시 플레이)
