@@ -47,6 +47,16 @@
   </tr>
 </table>
 
+## 흐름도
+
+### 1. 포커 게임 흐름도
+<img width="3779" height="485" alt="포커" src="https://github.com/user-attachments/assets/601b1501-e63d-4c59-8ebe-eec597bb8815" />
+
+### 2. 플레이어 자리 비움 흐름도
+<img width="2217" height="334" alt="포커 (1)" src="https://github.com/user-attachments/assets/d0e0ef3c-3e75-4a65-bbe0-06fb83e4e9e5" />
+
+
+
 ## 🚀 주요 기능
 
 ### 1. 실시간 멀티플레이어 게임 로직 구현 (최대 6명 동시 플레이)
